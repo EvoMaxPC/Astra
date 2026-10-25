@@ -24,6 +24,7 @@ import {
   HARBOR_80S_FERRY,
   ISLAND_70S_BUILDINGS,
   ISLAND_ANOMALY_PORTALS,
+  ISLAND_NORTH_CAVE_ENTRANCES,
   ISLAND_WOODEN_SIGNS,
   LABYRINTH_1976_ENTRANCE,
   RPG_CHESTS,
@@ -225,9 +226,11 @@ function drawHandcraftedTree(
   ctx.fillStyle = dark;
   ctx.fillRect(-9, -8, 18, 15);
   ctx.fillStyle = '#5c381c';
-  ctx.fillRect(-7, -8, 14, 13);
+  ctx.fillRect(-6, -8, 12, 13);
   ctx.fillStyle = '#8b572a';
-  ctx.fillRect(-5, -8, 5, 11);
+  ctx.fillRect(-4, -8, 3, 11);
+  ctx.fillStyle = '#382416';
+  ctx.fillRect(2, -7, 2, 9);
   ctx.fillRect(-10, 2, 4, 4);
   ctx.fillRect(6, 2, 4, 4);
 
@@ -237,21 +240,27 @@ function drawHandcraftedTree(
     const pMid = '#1f6357';
     const pLight = '#46a088';
     ctx.fillStyle = dark;
-    ctx.fillRect(-22, -22, 44, 16);
-    ctx.fillRect(-17, -36, 34, 16);
-    ctx.fillRect(-11, -48, 22, 14);
-    ctx.fillRect(-5, -54, 10, 8);
+    ctx.fillRect(-24, -22, 48, 17);
+    ctx.fillRect(-19, -37, 38, 17);
+    ctx.fillRect(-13, -50, 26, 15);
+    ctx.fillRect(-6, -57, 12, 9);
 
     ctx.fillStyle = pDark;
-    ctx.fillRect(-20, -20, 40, 12);
+    ctx.fillRect(-22, -20, 44, 13);
     ctx.fillStyle = pMid;
-    ctx.fillRect(-18, -22, 36, 8);
-    ctx.fillRect(-15, -34, 30, 12);
-    ctx.fillRect(-9, -46, 18, 12);
+    ctx.fillRect(-20, -22, 40, 9);
+    ctx.fillRect(-17, -35, 34, 12);
+    ctx.fillRect(-11, -48, 22, 12);
     ctx.fillStyle = pLight;
-    ctx.fillRect(-12, -22, 10, 4);
-    ctx.fillRect(-10, -34, 10, 5);
-    ctx.fillRect(-5, -52, 8, 8);
+    ctx.fillRect(-16, -22, 12, 4);
+    ctx.fillRect(3, -19, 9, 3);
+    ctx.fillRect(-13, -35, 11, 4);
+    ctx.fillRect(2, -32, 8, 3);
+    ctx.fillRect(-7, -49, 8, 5);
+    ctx.fillStyle = '#a7f3d0';
+    ctx.fillRect(-6, -54, 4, 3);
+    ctx.fillRect(-10, -39, 3, 2);
+    ctx.fillRect(-15, -26, 4, 2);
   } else {
     // Roble antiguo del bosque o árbol dorado-esmeralda de pradera con follaje asimétrico
     const leafDeep = variant === 'forest' ? '#143d29' : '#24582a';
@@ -260,25 +269,41 @@ function drawHandcraftedTree(
     const leafAccent = variant === 'forest' ? '#5eead4' : '#d9f99d';
 
     ctx.fillStyle = dark;
-    ctx.fillRect(-24, -30, 48, 22);
-    ctx.fillRect(-20, -42, 40, 16);
-    ctx.fillRect(-12, -48, 24, 10);
+    ctx.fillRect(-26, -28, 52, 21);
+    ctx.fillRect(-24, -39, 48, 19);
+    ctx.fillRect(-15, -48, 30, 14);
+    ctx.fillRect(-6, -53, 12, 8);
 
     ctx.fillStyle = leafDeep;
-    ctx.fillRect(-22, -28, 44, 18);
+    ctx.fillRect(-24, -26, 48, 17);
     ctx.fillStyle = leafMid;
-    ctx.fillRect(-20, -38, 38, 20);
-    ctx.fillRect(-10, -46, 20, 10);
+    ctx.fillRect(-22, -37, 44, 18);
+    ctx.fillRect(-14, -46, 28, 12);
+    ctx.fillRect(-5, -51, 10, 7);
 
     ctx.fillStyle = leafHi;
-    ctx.fillRect(-16, -40, 16, 10);
-    ctx.fillRect(2, -36, 12, 8);
-    ctx.fillRect(-8, -46, 12, 6);
+    ctx.fillRect(-18, -38, 16, 8);
+    ctx.fillRect(3, -35, 14, 7);
+    ctx.fillRect(-11, -46, 13, 6);
+    ctx.fillRect(-3, -51, 7, 4);
+    ctx.fillStyle = leafDeep;
+    ctx.fillRect(-23, -14, 13, 5);
+    ctx.fillRect(11, -18, 12, 5);
+    ctx.fillRect(-12, -6, 13, 4);
+    ctx.fillStyle = leafMid;
+    ctx.fillRect(-24, -16, 10, 4);
+    ctx.fillRect(14, -20, 9, 4);
+    ctx.fillRect(-9, -8, 9, 4);
 
     // Destellos de hojas / esporas de señal en el bosque
     ctx.fillStyle = leafAccent;
-    ctx.fillRect(-12, -38, 4, 3);
-    ctx.fillRect(6, -34, 4, 3);
+    ctx.fillRect(-15, -39, 4, 3);
+    ctx.fillRect(7, -34, 4, 3);
+    ctx.fillRect(-5, -46, 3, 2);
+    ctx.fillRect(15, -17, 3, 2);
+    ctx.fillStyle = variant === 'forest' ? '#a7f3d0' : '#fef3c7';
+    ctx.fillRect(-20, -19, 2, 2);
+    ctx.fillRect(1, -42, 2, 2);
   }
 
   ctx.restore();
@@ -1005,7 +1030,13 @@ function drawGbcWalkableSurfaceTile(
     ctx.fillStyle = shade;
     ctx.fillRect(wx, wy, CELL, CELL);
     ctx.fillStyle = '#c59f56';
-    if (h % 3 === 0) ctx.fillRect(wx + 6, wy + 10, PX * 3, PX);
+    ctx.fillRect(wx + 2, wy + 28, 28, 2);
+    ctx.fillRect(wx + 5 + (h % 8), wy + 8, 8 + (h % 5), 2);
+    ctx.fillStyle = '#f5dfa5';
+    ctx.fillRect(wx + 4, wy + 4, 10, 2);
+    ctx.fillRect(wx + 20, wy + 18, 8, 2);
+    ctx.fillStyle = '#c59f56';
+    if (h % 3 === 0) ctx.fillRect(wx + 6, wy + 12, PX * 3, PX);
     if (h % 5 === 0) ctx.fillRect(wx + 18, wy + 22, PX * 2, PX);
     if (h % 13 === 0) {
       // Charco mareal costero cristalino
@@ -1029,13 +1060,22 @@ function drawGbcWalkableSurfaceTile(
     const isRuins = zoneId === 'ruinas-primer-arcade';
     ctx.fillStyle = isRuins ? '#9aa5b4' : '#d6bc88';
     ctx.fillRect(wx, wy, CELL, CELL);
-    ctx.fillStyle = isRuins ? '#687488' : '#ad8d56';
-    ctx.fillRect(wx, wy + 15, CELL, PX);
-    ctx.fillRect(wx + 15, wy, PX, 15);
-    ctx.fillRect(wx + 27, wy + 16, PX, 16);
-    ctx.fillStyle = isRuins ? '#cbd5e1' : '#ede0bc';
-    ctx.fillRect(wx + 3, wy + 3, 9, PX);
-    ctx.fillRect(wx + 18, wy + 19, 8, PX);
+    const grout = isRuins ? '#687488' : '#ad8d56';
+    const stoneHi = isRuins ? '#cbd5e1' : '#ede0bc';
+    const stoneShadow = isRuins ? '#8591a1' : '#c0a878';
+    ctx.fillStyle = grout;
+    ctx.fillRect(wx, wy + 15, CELL, 2);
+    ctx.fillRect(wx + 15, wy, 2, 15);
+    ctx.fillRect(wx + 27, wy + 17, 2, 15);
+    ctx.fillStyle = stoneHi;
+    ctx.fillRect(wx + 3, wy + 3, 9, 2);
+    ctx.fillRect(wx + 19, wy + 20, 7, 2);
+    ctx.fillStyle = stoneShadow;
+    ctx.fillRect(wx + 4, wy + 12, 9, 2);
+    ctx.fillRect(wx + 19, wy + 28, 8, 2);
+    ctx.fillStyle = isRuins ? '#78869b' : '#9c8153';
+    ctx.fillRect(wx + 3, wy + 5, 2, 5);
+    ctx.fillRect(wx + 19, wy + 22, 2, 5);
     // Musgo sutil o traza de cobre arqueológico entre losas
     if (isRuins && h % 7 === 0) {
       ctx.fillStyle = '#38bdf8';
@@ -1066,6 +1106,19 @@ function drawGbcWalkableSurfaceTile(
       ? '#4b9b49'
       : '#459347';
     ctx.fillRect(wx, wy, CELL, CELL);
+    ctx.fillStyle = isForest ? '#193f2b' : '#397c3e';
+    if (patch === 0) {
+      ctx.fillRect(wx + 2, wy + 25, 12, 3);
+      ctx.fillRect(wx + 21, wy + 5, 8, 2);
+    } else if (patch === 2) {
+      ctx.fillRect(wx + 2, wy + 3, 7, 2);
+      ctx.fillRect(wx + 18, wy + 27, 11, 3);
+    }
+    ctx.fillStyle = isForest ? '#3b8750' : '#65ad4d';
+    if (patch === 1 || patch === 4) {
+      ctx.fillRect(wx + 4, wy + 20, 8, 2);
+      ctx.fillRect(wx + 22, wy + 8, 6, 2);
+    }
 
     // Matas de hierba asimétricas y tréboles
     ctx.fillStyle = isForest ? '#173c26' : '#2d6d34';
@@ -1139,9 +1192,13 @@ function drawGbcWalkableSurfaceTile(
     ctx.fillStyle = '#523216';
     for (let py = 0; py < CELL; py += 8) {
       ctx.fillRect(wx, wy + py, CELL, PX);
+      ctx.fillRect(wx + 15, wy + py + 2, 2, 4);
     }
     ctx.fillStyle = '#c48c4e';
     ctx.fillRect(wx + 4, wy + 2, 10, PX);
+    ctx.fillRect(wx + 20, wy + 5, 8, 2);
+    ctx.fillStyle = '#e0ae68';
+    ctx.fillRect(wx + 4, wy + 3, 7, 1);
     return;
   }
 
@@ -1166,6 +1223,10 @@ function drawGbcWalkableSurfaceTile(
   ctx.fillRect(wx + 16, wy, PX, CELL);
   ctx.fillStyle = '#aeb9c7';
   ctx.fillRect(wx + 4, wy + 4, 9, PX);
+  ctx.fillStyle = '#697585';
+  ctx.fillRect(wx + 19, wy + 19, 10, 2);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(wx + 20, wy + 22, 7, 2);
 }
 
 /** Senderos orgánicos de tierra apisonada, losas y escalinatas de desnivel hechos a mano */
@@ -1176,128 +1237,131 @@ function drawHandcraftedPathsAndStairs(
   vw: number,
   vh: number
 ): void {
-  const drawSteppingPath = (
+  const drawGridPath = (
     pts: [number, number][],
-    width: number,
     fillHex: string,
     borderHex: string
   ) => {
-    for (let i = 0; i < pts.length - 1; i++) {
-      const [x0, y0] = pts[i];
-      const [x1, y1] = pts[i + 1];
-      const minX = Math.min(x0, x1) - width;
-      const minY = Math.min(y0, y1) - width;
-      const boxW = Math.abs(x1 - x0) + width * 2;
-      const boxH = Math.abs(y1 - y0) + width * 2;
-      if (!isWorldBoxVisible(minX, minY, boxW, boxH, camX, camY, vw, vh)) continue;
-
-      const steps = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 18));
-      for (let s = 0; s <= steps; s++) {
-        const t = s / steps;
-        const px = Math.round(x0 + (x1 - x0) * t);
-        const py = Math.round(y0 + (y1 - y0) * t);
-        ctx.fillStyle = borderHex;
-        ctx.fillRect(px - width / 2 - 2, py - width / 2 - 2, width + 4, width * 0.72 + 4);
-        ctx.fillStyle = fillHex;
-        ctx.fillRect(px - width / 2, py - width / 2, width, width * 0.72);
+    const width = 24;
+    const drawSegments = (lineWidth: number) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x0, y0] = pts[i];
+        const [x1, y1] = pts[i + 1];
+        const horizontal = y0 === y1;
+        const x = horizontal ? Math.min(x0, x1) - lineWidth / 2 : x0 - lineWidth / 2;
+        const y = horizontal ? y0 - lineWidth / 2 : Math.min(y0, y1) - lineWidth / 2;
+        const segmentWidth = horizontal ? Math.abs(x1 - x0) + lineWidth : lineWidth;
+        const segmentHeight = horizontal ? lineWidth : Math.abs(y1 - y0) + lineWidth;
+        if (!isWorldBoxVisible(x, y, segmentWidth, segmentHeight, camX, camY, vw, vh)) continue;
+        ctx.fillRect(x, y, segmentWidth, segmentHeight);
       }
-    }
+    };
+
+    ctx.fillStyle = borderHex;
+    drawSegments(width + 4);
+    ctx.fillStyle = fillHex;
+    drawSegments(width);
   };
 
-  // Camino orgánico de la Aldea hacia el Mirador Anómalo Este y la Cala Sur
-  drawSteppingPath(
+  // Rutas de 24 px sobre cuadrícula de 16 px; solo giros de 90 grados.
+  drawGridPath(
     [
-      [416, 1764],
-      [560, 1810],
-      [626, 1762],
-      [696, 1816],
-      [840, 1878],
-      [948, 1884],
+      [416, 1760],
+      [560, 1760],
+      [560, 1808],
+      [688, 1808],
+      [688, 1856],
+      [944, 1856],
     ],
-    28,
     '#c8ab76',
-    '#7d633c'
+    '#a88a58'
   );
-  drawSteppingPath(
+  drawGridPath(
     [
-      [560, 1810],
-      [540, 1936],
-      [680, 1960],
-      [818, 1952],
+      [560, 1808],
+      [544, 1808],
+      [544, 1936],
+      [672, 1936],
+      [672, 1952],
+      [816, 1952],
     ],
-    24,
     '#c8ab76',
-    '#7d633c'
+    '#a88a58'
   );
 
-  // Sendero forestal sinuoso por El Bosque de las Señales Perdidas
-  drawSteppingPath(
+  drawGridPath(
     [
-      [632, 1600],
-      [672, 1460],
-      [820, 1360],
+      [640, 1600],
+      [640, 1488],
+      [672, 1488],
+      [672, 1408],
+      [816, 1408],
+      [816, 1360],
+      [928, 1360],
       [928, 1280],
-      [964, 1108],
+      [960, 1280],
+      [960, 1104],
     ],
-    26,
     '#9c7a4c',
-    '#574124'
+    '#7d633f'
   );
-  drawSteppingPath(
-    [
-      [928, 1280],
-      [1180, 1288],
-      [1480, 1296],
-      [1620, 1296],
-    ],
-    28,
+  drawGridPath(
+    [[928, 1280], [1616, 1280]],
     '#b59463',
-    '#664e2e'
+    '#8e7449'
   );
 
-  // Calzada arqueológica en Las Ruinas del Primer Pulso (une Santuario, Cronoscopio y Portal Sur)
-  drawSteppingPath(
+  drawGridPath(
     [
-      [1620, 1296],
-      [1880, 1280],
+      [1616, 1280],
+      [1888, 1280],
+      [1888, 1200],
       [1936, 1200],
-      [2150, 1202],
-      [2140, 1420],
-      [2580, 1596],
-      [2816, 1612],
+      [2144, 1200],
+      [2144, 1424],
+      [2144, 1584],
+      [2592, 1584],
+      [2816, 1584],
+      [2816, 1616],
     ],
-    30,
     '#b8c2cc',
-    '#526071'
+    '#8492a2'
   );
-  drawSteppingPath(
+  drawGridPath(
     [
-      [1880, 1280],
-      [1760, 1430],
+      [1888, 1280],
+      [1760, 1280],
+      [1760, 1424],
+      [1664, 1424],
       [1664, 1536],
     ],
-    24,
     '#b8c2cc',
-    '#526071'
+    '#8492a2'
   );
-  // Ramal noroeste hacia el Museo Viviente de los 70 y sendero norte a la Escotilla 1976
-  drawSteppingPath(
-    [
-      [1640, 1296],
-      [1640, 1052],
-    ],
-    26,
+  drawGridPath(
+    [[1648, 1280], [1648, 1056]],
     '#cbd5e1',
-    '#475569'
+    '#8b99a9'
   );
-  drawSteppingPath(
-    [
-      [2680, 1560],
-      [2704, 1364],
-    ],
-    22,
+  drawGridPath(
+    [[2688, 1568], [2688, 1360]],
     '#b8ab7a',
-    '#665938'
+    '#96885a'
+  );
+  drawGridPath(
+    [[1952, 160], [1952, 80], [1952, -112], [1952, -448], [1952, -640]],
+    '#cbd5e1',
+    '#7c8994'
+  );
+  drawGridPath(
+    [[1952, -144], [1552, -144], [1392, -144], [1240, -144]],
+    '#c8ab76',
+    '#8e7449'
+  );
+  drawGridPath(
+    [[1952, -128], [2352, -128], [2608, -128], [2848, -128]],
+    '#cbd5e1',
+    '#7c8994'
   );
 
   // Escalinatas talladas en piedra para salvar desniveles entre terrazas
@@ -1317,6 +1381,202 @@ function drawHandcraftedPathsAndStairs(
       ctx.fillRect(st.x, sy + 2, st.w, 7);
     }
   }
+}
+
+function drawWoodenRail(
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+): void {
+  const horizontal = startY === endY;
+  const start = horizontal ? startX : startY;
+  const end = horizontal ? endX : endY;
+  const length = end - start;
+  const railThickness = 4;
+
+  ctx.fillStyle = '#694321';
+  if (horizontal) {
+    ctx.fillRect(startX, startY - 8, length, railThickness);
+    ctx.fillRect(startX, startY + 2, length, railThickness);
+  } else {
+    ctx.fillRect(startX - 8, startY, railThickness, length);
+    ctx.fillRect(startX + 2, startY, railThickness, length);
+  }
+
+  for (let position = start; position <= end; position += 32) {
+    ctx.fillStyle = '#8b5a2b';
+    if (horizontal) {
+      ctx.fillRect(position - 3, startY - 8, 6, 18);
+    } else {
+      ctx.fillRect(startX - 8, position - 3, 18, 6);
+    }
+    ctx.fillStyle = '#d8be88';
+    if (horizontal) {
+      ctx.fillRect(position - 2, startY - 7, 2, 16);
+    } else {
+      ctx.fillRect(startX - 7, position - 2, 16, 2);
+    }
+  }
+}
+
+type IslandPerimeterEdge = {
+  side: 'top' | 'bottom' | 'left' | 'right';
+  fixed: number;
+  start: number;
+  end: number;
+};
+
+const ISLAND_PERIMETER_TILE = 16;
+const ISLAND_PERIMETER_OPENINGS: IslandPerimeterEdge[] = [
+  { side: 'bottom', fixed: 2096, start: 272, end: 448 },
+  { side: 'left', fixed: 192, start: 1920, end: 2016 },
+];
+
+const ISLAND_PERIMETER_EDGES: IslandPerimeterEdge[] = (() => {
+  const cellKey = (x: number, y: number) => `${x},${y}`;
+  const occupied = new Set<string>();
+  const railCells: Array<{ x: number; y: number }> = [];
+  const railCellKeys = new Set<string>();
+
+  for (const rect of ISLAND_WALKABLE_RECTS) {
+    for (let y = rect.y; y < rect.y + rect.h; y += ISLAND_PERIMETER_TILE) {
+      for (let x = rect.x; x < rect.x + rect.w; x += ISLAND_PERIMETER_TILE) {
+        const key = cellKey(x, y);
+        occupied.add(key);
+        if (rect.surface !== 'bridge' && rect.surface !== 'pier' && !railCellKeys.has(key)) {
+          railCellKeys.add(key);
+          railCells.push({ x, y });
+        }
+      }
+    }
+  }
+
+  const spansByEdge = new Map<string, { side: IslandPerimeterEdge['side']; fixed: number; start: number; end: number }[]>();
+  const addSpan = (side: IslandPerimeterEdge['side'], fixed: number, start: number) => {
+    const key = `${side}:${fixed}`;
+    const spans = spansByEdge.get(key) ?? [];
+    spans.push({ side, fixed, start, end: start + ISLAND_PERIMETER_TILE });
+    spansByEdge.set(key, spans);
+  };
+
+  for (const { x, y } of railCells) {
+    if (!occupied.has(cellKey(x, y - ISLAND_PERIMETER_TILE))) addSpan('top', y, x);
+    if (!occupied.has(cellKey(x, y + ISLAND_PERIMETER_TILE))) addSpan('bottom', y + ISLAND_PERIMETER_TILE, x);
+    if (!occupied.has(cellKey(x - ISLAND_PERIMETER_TILE, y))) addSpan('left', x, y);
+    if (!occupied.has(cellKey(x + ISLAND_PERIMETER_TILE, y))) addSpan('right', x + ISLAND_PERIMETER_TILE, y);
+  }
+
+  const edges: IslandPerimeterEdge[] = [];
+  for (const spans of spansByEdge.values()) {
+    spans.sort((a, b) => a.start - b.start);
+    let current = { ...spans[0] };
+    for (let i = 1; i < spans.length; i++) {
+      const next = spans[i];
+      if (next.start <= current.end) {
+        current.end = Math.max(current.end, next.end);
+      } else {
+        edges.push(current);
+        current = { ...next };
+      }
+    }
+    edges.push(current);
+  }
+  return edges;
+})();
+
+function drawIslandPerimeterRails(
+  ctx: CanvasRenderingContext2D,
+  camX: number,
+  camY: number,
+  vw: number,
+  vh: number
+): void {
+  for (const edge of ISLAND_PERIMETER_EDGES) {
+    let spans = [{ start: edge.start, end: edge.end }];
+    for (const opening of ISLAND_PERIMETER_OPENINGS) {
+      if (opening.side !== edge.side || opening.fixed !== edge.fixed) continue;
+      const nextSpans: typeof spans = [];
+      for (const span of spans) {
+        if (opening.end <= span.start || opening.start >= span.end) {
+          nextSpans.push(span);
+          continue;
+        }
+        if (opening.start > span.start) nextSpans.push({ start: span.start, end: opening.start });
+        if (opening.end < span.end) nextSpans.push({ start: opening.end, end: span.end });
+      }
+      spans = nextSpans;
+    }
+
+    for (const span of spans) {
+      const horizontal = edge.side === 'top' || edge.side === 'bottom';
+      const railX = horizontal
+        ? span.start
+        : edge.side === 'left'
+        ? edge.fixed - 8
+        : edge.fixed + 8;
+      const railY = horizontal
+        ? edge.side === 'top'
+          ? edge.fixed - 8
+          : edge.fixed + 8
+        : span.start;
+      const length = span.end - span.start;
+      if (length <= 0) continue;
+      const boxX = horizontal ? railX : railX - 10;
+      const boxY = horizontal ? railY - 10 : railY;
+      if (!isWorldBoxVisible(boxX, boxY, horizontal ? length : 20, horizontal ? 20 : length, camX, camY, vw, vh)) {
+        continue;
+      }
+      drawWoodenRail(
+        ctx,
+        railX,
+        railY,
+        horizontal ? span.end : railX,
+        horizontal ? railY : span.end
+      );
+    }
+  }
+}
+
+function drawRusticFence(ctx: CanvasRenderingContext2D, fx: number, fy: number, count: number): void {
+  for (let i = 0; i < count; i++) {
+    const x = fx + i * 16;
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(x, fy, 16, 13);
+    ctx.fillStyle = '#b07d48';
+    ctx.fillRect(x + 2, fy + 2, 4, 9);
+    ctx.fillRect(x + 10, fy + 2, 4, 9);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(x, fy + 5, 16, 3);
+  }
+}
+
+function drawIslandWoodRailSystem(
+  ctx: CanvasRenderingContext2D,
+  camX: number,
+  camY: number,
+  vw: number,
+  vh: number,
+  southShortcutActive: boolean,
+  glitchTrailCleared: boolean
+): void {
+  if (southShortcutActive && isWorldBoxVisible(864, 1632, 720, 112, camX, camY, vw, vh)) {
+    drawWoodenRail(ctx, 912, 1624, 1536, 1624);
+    drawWoodenRail(ctx, 912, 1752, 1536, 1752);
+  }
+
+  if (glitchTrailCleared && isWorldBoxVisible(2064, 624, 384, 128, camX, camY, vw, vh)) {
+    drawWoodenRail(ctx, 2108, 616, 2404, 616);
+    drawWoodenRail(ctx, 2108, 760, 2404, 760);
+  }
+
+  if (isWorldBoxVisible(2992, 1056, 528, 336, camX, camY, vw, vh)) {
+    drawWoodenRail(ctx, 2984, 1136, 2984, 1344);
+    drawWoodenRail(ctx, 3528, 1088, 3528, 1280);
+  }
+
+  drawIslandPerimeterRails(ctx, camX, camY, vw, vh);
 }
 
 /** Dibuja un Portal Anómalo con distinción visual clara entre estado latente y activo */
@@ -1508,9 +1768,37 @@ function drawPixelverseBuilding(
 
   ctx.save();
 
-  // Sombra proyectada en el suelo
+  // Zócalo y sombra en bloques para anclar visualmente el edificio al terreno
   ctx.fillStyle = 'rgba(5, 9, 18, 0.45)';
-  ctx.fillRect(bx - 6, by + bldg.h - 2, bldg.w + 12, 12);
+  ctx.fillRect(bx - 8, by + bldg.h - 2, bldg.w + 16, 14);
+  ctx.fillStyle = '#5b4932';
+  ctx.fillRect(bx - 4, by + bldg.h - 4, bldg.w + 8, 6);
+
+  const drawRoofTiles = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    shadeHex: string,
+    glintHex: string,
+    tileWidth = 14
+  ) => {
+    for (let row = 0; row < height; row += 6) {
+      const offset = row % 12 === 0 ? 0 : Math.floor(tileWidth / 2);
+      ctx.fillStyle = shadeHex;
+      ctx.fillRect(x, y + row + 5, width, 2);
+      for (let tileX = x - offset; tileX < x + width; tileX += tileWidth) {
+        const visibleX = Math.max(x + 1, tileX + 2);
+        const tileEnd = Math.min(x + width - 1, tileX + tileWidth - 2);
+        if (tileEnd > visibleX) {
+          ctx.fillStyle = glintHex;
+          ctx.fillRect(visibleX, y + row + 1, tileEnd - visibleX, 2);
+          ctx.fillStyle = shadeHex;
+          ctx.fillRect(visibleX, y + row + 3, tileEnd - visibleX, 1);
+        }
+      }
+    }
+  };
 
   if (style === 'chrono-dome') {
     // OBSERVATORIO DEL CRONOSCOPIO: Cúpula octogonal de obsidiana, bronce y lente temporal cian
@@ -1519,11 +1807,17 @@ function drawPixelverseBuilding(
     ctx.fillStyle = bldg.wallHex;
     ctx.fillRect(bx, by + 24, bldg.w, bldg.h - 24);
 
-    // Contrafuertes de bronce en las esquinas
+    // Contrafuertes y juntas de sillería de bronce
     ctx.fillStyle = '#d8be88';
     ctx.fillRect(bx, by + 24, 10, bldg.h - 24);
     ctx.fillRect(bx + bldg.w - 10, by + 24, 10, bldg.h - 24);
     ctx.fillRect(bx, by + bldg.h - 8, bldg.w, 8);
+    ctx.fillStyle = '#64748b';
+    for (let courseY = by + 40; courseY < by + bldg.h - 12; courseY += 16) {
+      ctx.fillRect(bx + 12, courseY, bldg.w - 24, 2);
+    }
+    ctx.fillStyle = '#e2d1a7';
+    ctx.fillRect(bx + 12, by + 26, bldg.w - 24, 3);
 
     // Cúpula astronómica escalonada (sin franjas horizontales clónicas)
     ctx.fillStyle = '#070b14';
@@ -1534,8 +1828,23 @@ function drawPixelverseBuilding(
     ctx.fillStyle = bldg.roofHex;
     ctx.fillRect(bx + 10, by + 6, bldg.w - 20, 18);
     ctx.fillRect(bx + 28, by - 8, bldg.w - 56, 14);
+    drawRoofTiles(
+      bx + 12,
+      by + 6,
+      bldg.w - 24,
+      14,
+      bldg.roofShadeHex,
+      '#67e8f9',
+      18
+    );
     ctx.fillStyle = bldg.roofShadeHex;
     ctx.fillRect(bx + 10, by + 18, bldg.w - 20, 6);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillRect(bx + 14, by + 7, bldg.w - 28, 2);
+    ctx.fillStyle = '#164e63';
+    for (let roofX = bx + 18; roofX < bx + bldg.w - 18; roofX += 20) {
+      ctx.fillRect(roofX, by + 10, 2, 7);
+    }
 
     // Meridiano de latón y lente ocular del Cronoscopio en la cúpula
     const cx = Math.round(bx + bldg.w / 2);
@@ -1572,16 +1881,36 @@ function drawPixelverseBuilding(
     ctx.fillRect(bx, by + 26, 6, bldg.h - 26);
     ctx.fillRect(bx + bldg.w - 6, by + 26, 6, bldg.h - 26);
     ctx.fillRect(bx, by + 54, bldg.w, 4);
+    ctx.fillStyle = '#f0dfbd';
+    ctx.fillRect(bx + 8, by + 30, bldg.w - 16, 3);
+    ctx.fillStyle = '#bca982';
+    for (let boardY = by + 62; boardY < by + bldg.h - 8; boardY += 9) {
+      ctx.fillRect(bx + 8, boardY, bldg.w - 16, 2);
+    }
 
     // Cubierta inclinada de placas de cobre verde-azulado con tragaluz de taller
     ctx.fillStyle = '#070b14';
     ctx.fillRect(bx - 6, by + 4, bldg.w + 12, 24);
     ctx.fillStyle = bldg.roofHex;
     ctx.fillRect(bx - 4, by + 6, bldg.w + 8, 20);
+    drawRoofTiles(
+      bx - 2,
+      by + 6,
+      bldg.w + 4,
+      16,
+      bldg.roofShadeHex,
+      '#5eead4',
+      18
+    );
     ctx.fillStyle = bldg.roofShadeHex;
     for (let px = bx + 12; px < bx + bldg.w - 8; px += 22) {
       ctx.fillRect(px, by + 6, 2, 20);
+      ctx.fillRect(px + 6, by + 19, 10, 2);
     }
+    ctx.fillStyle = '#5eead4';
+    ctx.fillRect(bx - 3, by + 7, bldg.w + 6, 2);
+    ctx.fillStyle = '#134e4a';
+    ctx.fillRect(bx - 4, by + 24, bldg.w + 8, 3);
     // Tragaluz ámbar
     ctx.fillStyle = '#070b14';
     ctx.fillRect(bx + 22, by + 10, 28, 12);
@@ -1594,10 +1923,19 @@ function drawPixelverseBuilding(
     ctx.fillStyle = bldg.wallHex;
     ctx.fillRect(bx - 2, by + 20, bldg.w + 4, bldg.h - 20);
 
-    // Columnas frontales labradas
+    // Sillería y columnas frontales labradas
+    ctx.fillStyle = '#c2b39c';
+    for (let courseY = by + 42; courseY < by + bldg.h - 10; courseY += 14) {
+      ctx.fillRect(bx + 22, courseY, bldg.w - 44, 2);
+    }
     ctx.fillStyle = '#94a3b8';
     ctx.fillRect(bx + 8, by + 28, 12, bldg.h - 32);
     ctx.fillRect(bx + bldg.w - 20, by + 28, 12, bldg.h - 32);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(bx + 6, by + 28, 16, 4);
+    ctx.fillRect(bx + bldg.w - 22, by + 28, 16, 4);
+    ctx.fillRect(bx + 6, by + bldg.h - 8, 16, 4);
+    ctx.fillRect(bx + bldg.w - 22, by + bldg.h - 8, 16, 4);
 
     // Frontón escalonado del templo con emblema cian
     ctx.fillStyle = '#070b14';
@@ -1606,8 +1944,23 @@ function drawPixelverseBuilding(
     ctx.fillStyle = bldg.roofHex;
     ctx.fillRect(bx - 6, by + 6, bldg.w + 12, 14);
     ctx.fillRect(bx + 20, by - 4, bldg.w - 40, 10);
+    drawRoofTiles(
+      bx - 4,
+      by + 6,
+      bldg.w + 8,
+      12,
+      bldg.roofShadeHex,
+      '#fbbf24',
+      16
+    );
     ctx.fillStyle = '#d8be88';
     ctx.fillRect(bx + 4, by + 16, bldg.w - 8, 3);
+    ctx.fillStyle = '#fde68a';
+    ctx.fillRect(bx + 4, by + 7, bldg.w - 8, 2);
+    ctx.fillStyle = '#78350f';
+    for (let tileX = bx + 8; tileX < bx + bldg.w; tileX += 18) {
+      ctx.fillRect(tileX, by + 10, 2, 8);
+    }
   } else if (style === 'museum-hall') {
     // MUSEO VIVIENTE DE LOS 70: Galería neoclásica retrofuturista con tragaluz de cristal y friso cromático RGB
     ctx.fillStyle = '#070b14';
@@ -1620,6 +1973,12 @@ function drawPixelverseBuilding(
     for (const cxOff of [10, 44, bldg.w - 56, bldg.w - 22]) {
       ctx.fillRect(bx + cxOff, by + 28, 10, bldg.h - 32);
     }
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(bx + 6, by + 26, bldg.w - 12, 5);
+    ctx.fillStyle = '#64748b';
+    for (let courseY = by + 44; courseY < by + bldg.h - 12; courseY += 16) {
+      ctx.fillRect(bx + 4, courseY, bldg.w - 8, 2);
+    }
 
     // Cubierta escalonada de pizarra con claraboya luminosa cian-ámbar
     ctx.fillStyle = '#070b14';
@@ -1629,8 +1988,23 @@ function drawPixelverseBuilding(
     ctx.fillRect(bx - 6, by + 4, bldg.w + 12, 14);
     ctx.fillStyle = '#0ea5e9';
     ctx.fillRect(bx + 32, by - 8, bldg.w - 64, 10);
+    drawRoofTiles(
+      bx - 4,
+      by + 4,
+      bldg.w + 8,
+      12,
+      bldg.roofShadeHex,
+      '#bae6fd',
+      16
+    );
     ctx.fillStyle = '#bae6fd';
     ctx.fillRect(bx + 40, by - 6, bldg.w - 80, 4);
+    ctx.fillStyle = bldg.roofShadeHex;
+    for (let roofX = bx + 4; roofX < bx + bldg.w; roofX += 20) {
+      ctx.fillRect(roofX, by + 8, 2, 7);
+    }
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(bx - 8, by + 18, bldg.w + 16, 3);
 
     // Friso histórico de 4 bandas (1971–1979)
     const frieze = ['#00f3ff', '#facc15', '#f97316', '#39ff14'];
@@ -1652,6 +2026,12 @@ function drawPixelverseBuilding(
     ctx.fillRect(bx, by + 26, bldg.w, bldg.h - 26);
     ctx.fillStyle = '#a89984';
     ctx.fillRect(bx, by + bldg.h - 10, bldg.w, 10);
+    ctx.fillStyle = '#f5ead1';
+    ctx.fillRect(bx + 6, by + 30, bldg.w - 12, 3);
+    ctx.fillStyle = '#c2b39c';
+    for (let courseY = by + 62; courseY < by + bldg.h - 12; courseY += 10) {
+      ctx.fillRect(bx + 6, courseY, bldg.w - 12, 2);
+    }
 
     // Tejado de pizarra terracota con tejas imbricadas y hastial central de madera
     ctx.fillStyle = '#070b14';
@@ -1660,21 +2040,55 @@ function drawPixelverseBuilding(
     ctx.fillStyle = bldg.roofHex;
     ctx.fillRect(bx - 6, by + 8, bldg.w + 12, 18);
     ctx.fillRect(bx + 26, by - 2, bldg.w - 52, 10);
+    drawRoofTiles(
+      bx - 4,
+      by + 8,
+      bldg.w + 8,
+      16,
+      bldg.roofShadeHex,
+      '#fca5a5',
+      14
+    );
     ctx.fillStyle = bldg.roofShadeHex;
     for (let tx = bx; tx < bx + bldg.w; tx += 14) {
       ctx.fillRect(tx, by + 14, 8, 3);
+      ctx.fillRect(tx + 6, by + 21, 8, 3);
     }
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillRect(bx - 5, by + 9, bldg.w + 10, 2);
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(bx + 26, by + 6, bldg.w - 52, 2);
   }
+
+  // Plano lateral en sombra y línea de luz para separar fachada y tejado.
+  ctx.fillStyle =
+    style === 'chrono-dome'
+      ? '#64748b'
+      : style === 'ruins-sanctuary' || style === 'museum-hall'
+      ? '#a89984'
+      : '#8b5a2b';
+  ctx.fillRect(bx + bldg.w - 8, by + 28, 6, bldg.h - 38);
+  ctx.fillStyle = style === 'chrono-dome' ? '#e2d1a7' : '#f0dfbd';
+  ctx.fillRect(bx + 6, by + 28, 2, bldg.h - 40);
 
   // Ventanas artesanales cálidas en fachada
   const drawArchWindow = (wx: number, wy: number, glowHex: string) => {
     ctx.fillStyle = '#070b14';
     ctx.fillRect(wx, wy, 22, 20);
-    ctx.fillStyle = glowHex;
+    ctx.fillRect(wx + 2, wy - 2, 18, 2);
+    ctx.fillStyle = style === 'ruins-sanctuary' || style === 'museum-hall'
+      ? '#d8be88'
+      : '#6b4423';
     ctx.fillRect(wx + 2, wy + 2, 18, 16);
+    ctx.fillStyle = glowHex;
+    ctx.fillRect(wx + 4, wy + 4, 14, 12);
     ctx.fillStyle = '#070b14';
     ctx.fillRect(wx + 10, wy + 2, 2, 16);
     ctx.fillRect(wx + 2, wy + 10, 18, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(wx + 5, wy + 5, 3, 2);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(wx - 2, wy + 20, 26, 3);
   };
   const winGlow = style === 'chrono-dome' ? '#67e8f9' : '#fef08a';
   drawArchWindow(bx + 18, by + 42, winGlow);
@@ -1682,12 +2096,24 @@ function drawPixelverseBuilding(
 
   // Puerta accesible con dintel de latón y umbral de piedra
   const dLeft = Math.round(bldg.doorX - 15);
+  ctx.fillStyle = style === 'ruins-sanctuary' || style === 'museum-hall'
+    ? '#d8be88'
+    : '#6b4423';
+  ctx.fillRect(dLeft - 5, by + bldg.h - 38, 40, 38);
+  ctx.fillRect(dLeft + 1, by + bldg.h - 43, 28, 7);
+  ctx.fillRect(dLeft + 5, by + bldg.h - 47, 20, 6);
+  ctx.fillStyle = style === 'chrono-dome' ? '#64748b' : '#a89984';
+  ctx.fillRect(dLeft - 1, by + bldg.h - 35, 32, 3);
+  ctx.fillRect(dLeft + 3, by + bldg.h - 41, 24, 2);
   ctx.fillStyle = '#d8be88';
   ctx.fillRect(dLeft - 3, by + bldg.h + 1, 36, 5);
   ctx.fillStyle = '#070b14';
   ctx.fillRect(dLeft, by + bldg.h - 34, 30, 34);
   ctx.fillStyle = style === 'chrono-dome' ? '#1e293b' : '#5c3818';
   ctx.fillRect(dLeft + 2, by + bldg.h - 32, 26, 32);
+  ctx.fillStyle = style === 'chrono-dome' ? '#475569' : '#8b5a2b';
+  ctx.fillRect(dLeft + 4, by + bldg.h - 28, 4, 23);
+  ctx.fillRect(dLeft + 22, by + bldg.h - 28, 2, 23);
   ctx.fillStyle = bldg.trimHex;
   ctx.fillRect(dLeft + 2, by + bldg.h - 32, 26, 3);
   ctx.fillStyle = '#f2c94c';
@@ -1781,7 +2207,7 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
   const tmStatus = evaluateTimeMachineStatus(progressState, allUnlocked);
 
   // 1. MAR PROFUNDO DEL ARCHIPIÉLAGO CON CORRIENTES Y CRESTAS DE ESPUMA ARTESANALES
-  ctx.fillStyle = '#0e3b5e';
+  ctx.fillStyle = '#0b2c49';
   ctx.fillRect(0, 0, vw, vh);
 
   const startTileX = Math.floor(camX / CELL) - 1;
@@ -1797,16 +2223,23 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
       const wx = tx * CELL;
       const wy = ty * CELL;
       const th = hashTile(tx, ty);
-      if ((tx + ty) % 2 === 0) {
-        ctx.fillStyle = '#134973';
-        ctx.fillRect(wx, wy, CELL, CELL);
+      ctx.fillStyle = th % 4 === 0 ? '#103e5a' : th % 3 === 0 ? '#0d3552' : '#0b2c49';
+      ctx.fillRect(wx, wy, CELL, CELL);
+
+      const currentOffset = ((animFrame4 + (tx % 4) + (ty % 3)) % 4) * 4;
+      ctx.fillStyle = '#175071';
+      ctx.fillRect(wx + 2 + currentOffset, wy + 7, 8, 2);
+      ctx.fillRect(wx + 17 - currentOffset / 2, wy + 25, 11, 2);
+      ctx.fillStyle = '#2f7890';
+      ctx.fillRect(wx + 5 + currentOffset, wy + 9, 5, 2);
+      if (th % 3 === 0) {
+        ctx.fillStyle = '#70b9bd';
+        ctx.fillRect(wx + 20 - currentOffset / 2, wy + 24, 5, 2);
       }
-      const waveOffset = ((animFrame4 + (tx % 3)) % 4) * 4;
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(wx + 4 + waveOffset, wy + 10, 10, PX);
-      if (th % 5 === 0) {
-        ctx.fillStyle = '#bae6fd';
-        ctx.fillRect(wx + 8 + waveOffset, wy + 22, 6, PX);
+      if (th % 11 === 0) {
+        ctx.fillStyle = '#b9dfd3';
+        ctx.fillRect(wx + 8 + currentOffset, wy + 4, 3, 2);
+        ctx.fillRect(wx + 24 - currentOffset / 2, wy + 18, 2, 2);
       }
     }
   }
@@ -1821,12 +2254,38 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
 
     if (r.surface !== 'bridge' && r.surface !== 'pier') {
       // Espuma de marea animada alrededor de los acantilados
-      ctx.fillStyle = animFrame4 % 2 === 0 ? '#e0f2fe' : '#7dd3fc';
+      ctx.fillStyle = animFrame4 % 2 === 0 ? '#c8e7d8' : '#82c8c7';
       ctx.fillRect(r.x - 8, r.y - 6, r.w + 16, r.h + 28);
+      ctx.fillStyle = '#e5e4c6';
+      for (let surfX = r.x - 4; surfX < r.x + r.w; surfX += 24) {
+        const tideOffset = ((animFrame4 + Math.floor(surfX / 24)) % 3) * 2;
+        ctx.fillRect(surfX, r.y - 5 + tideOffset, 12, 2);
+        ctx.fillRect(surfX + 8, r.y + r.h + 4 - tideOffset, 10, 2);
+      }
+      for (let surfY = r.y + 8; surfY < r.y + r.h; surfY += 28) {
+        const tideOffset = ((animFrame4 + Math.floor(surfY / 28)) % 3) * 2;
+        ctx.fillRect(r.x - 6 + tideOffset, surfY, 2, 10);
+        ctx.fillRect(r.x + r.w + 4 - tideOffset, surfY + 8, 2, 10);
+      }
+
+      // Sombra profunda teñida por el material, en lugar de un marco negro uniforme
+      ctx.fillStyle =
+        r.surface === 'fortress'
+          ? '#24161e'
+          : r.surface === 'crystal'
+          ? '#17132b'
+          : r.surface === 'stone'
+          ? '#4b5664'
+          : r.surface === 'sand'
+          ? '#927c52'
+          : r.surface === 'cobble'
+          ? r.zoneId === 'ruinas-primer-arcade'
+            ? '#667383'
+            : '#806c4b'
+          : '#304c37';
+      ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 24);
 
       // Pared de roca estratificada de dos niveles bajo cada meseta
-      ctx.fillStyle = '#070b14';
-      ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 24);
       ctx.fillStyle =
         r.surface === 'fortress'
           ? '#24161e'
@@ -1846,7 +2305,7 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
     }
   }
 
-  // 3. SUPERFICIES NATURALES Y ARQUEOLÓGICAS DE LOS 9 SECTORES
+  // 3. SUPERFICIES NATURALES Y ARQUEOLÓGICAS DE LOS 10 SECTORES
   for (const r of ISLAND_WALKABLE_RECTS) {
     if (r.requiresCondition === 'south-shortcut' && !southShortcutActive) continue;
     if (r.requiresCondition === 'garganta-bridge' && !glitchTrailCleared) continue;
@@ -1872,13 +2331,19 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
       }
     }
 
-    ctx.strokeStyle = 'rgba(7, 11, 20, 0.72)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(r.x, r.y, r.w, r.h);
   }
 
   // 3B. SENDEROS ORGÁNICOS Y ESCALINATAS TALLADAS ENTRE DESNIVELES
   drawHandcraftedPathsAndStairs(ctx, camX, camY, vw, vh);
+  drawIslandWoodRailSystem(
+    ctx,
+    camX,
+    camY,
+    vw,
+    vh,
+    southShortcutActive,
+    glitchTrailCleared
+  );
 
   // 4. COMPOSICIÓN AMBIENTAL ARTESANAL POR SECTOR
   // 4A. Arroyo cristalino y puente de madera hacia el Claro de Pong (1972)
@@ -1981,32 +2446,42 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
 
   // 4D. La Aldea de los Orígenes: Fuente de las Primeras Señales, bancos de madera y cercas rústicas
   if (isWorldBoxVisible(340, 1700, 520, 220, camX, camY, vw, vh)) {
-    const drawRusticFence = (fx: number, fy: number, count: number) => {
-      for (let i = 0; i < count; i++) {
-        const x = fx + i * 16;
-        ctx.fillStyle = '#070b14';
-        ctx.fillRect(x, fy, 16, 13);
-        ctx.fillStyle = '#b07d48';
-        ctx.fillRect(x + 2, fy + 2, 4, 9);
-        ctx.fillRect(x + 10, fy + 2, 4, 9);
-        ctx.fillStyle = '#d8be88';
-        ctx.fillRect(x, fy + 5, 16, 3);
-      }
-    };
-    drawRusticFence(352, 1712, 7);
-    drawRusticFence(724, 1712, 5);
+    drawRusticFence(ctx, 352, 1712, 7);
+    drawRusticFence(ctx, 724, 1712, 5);
 
     // Fuente/Pozo circular de piedra en la plazuela de la Aldea (x=592, y=1848)
     const fx = 592;
     const fy = 1848;
+    // Basamento octogonal escalonado con juntas claras hacia el lado iluminado.
     ctx.fillStyle = '#070b14';
-    ctx.fillRect(fx - 20, fy - 14, 40, 26);
+    ctx.fillRect(fx - 22, fy - 10, 44, 22);
+    ctx.fillRect(fx - 18, fy - 15, 36, 8);
+    ctx.fillStyle = '#756c5c';
+    ctx.fillRect(fx - 20, fy - 9, 40, 16);
+    ctx.fillRect(fx - 16, fy - 14, 32, 7);
+    ctx.fillStyle = '#b7aa8e';
+    ctx.fillRect(fx - 18, fy - 9, 36, 3);
+    ctx.fillRect(fx - 14, fy - 14, 28, 2);
+    ctx.fillStyle = '#4b5664';
+    ctx.fillRect(fx - 18, fy + 5, 36, 4);
+    ctx.fillRect(fx - 14, fy - 4, 28, 9);
+    ctx.fillStyle = '#176a85';
+    ctx.fillRect(fx - 12, fy - 3, 24, 7);
+    ctx.fillStyle = '#64c1c4';
+    ctx.fillRect(fx - 8, fy - 2, 11, 2);
+    ctx.fillRect(fx + 5, fy + 1, 5, 2);
+
+    // Pedestal y surtidor sobre el estanque; el agua conserva su brillo pixelado.
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(fx - 8, fy - 13, 16, 9);
     ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(fx - 18, fy - 12, 36, 22);
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(fx - 14, fy - 8, 28, 14);
-    ctx.fillStyle = animFrame4 % 2 === 0 ? '#7dd3fc' : '#e0f2fe';
-    ctx.fillRect(fx - 4, fy - 5, 8, 8);
+    ctx.fillRect(fx - 6, fy - 12, 12, 7);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(fx - 4, fy - 14, 8, 3);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(fx - 2, fy - 17, 4, 4);
+    ctx.fillStyle = '#e0f2fe';
+    ctx.fillRect(fx - 1, fy - 18, 2, 2);
 
     // Bancos de descanso artesanales junto a la fuente
     const drawBench = (bx: number, by: number) => {
@@ -2025,15 +2500,37 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
   if (isWorldBoxVisible(1860, 1220, 260, 140, camX, camY, vw, vh)) {
     const mx = 1996;
     const my = 1284;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.38)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(mx, my, 42, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(216, 190, 136, 0.5)';
-    ctx.strokeRect(mx - 28, my - 28, 56, 56);
-    ctx.restore();
+    // Medallón octogonal de losas ensambladas, con anillo cerámico y núcleo de pulso.
+    ctx.fillStyle = 'rgba(5, 9, 18, 0.42)';
+    ctx.fillRect(mx - 32, my - 42, 64, 84);
+    ctx.fillRect(mx - 42, my - 32, 84, 64);
+    ctx.fillStyle = '#667383';
+    ctx.fillRect(mx - 30, my - 40, 60, 80);
+    ctx.fillRect(mx - 40, my - 30, 80, 60);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(mx - 26, my - 34, 52, 68);
+    ctx.fillRect(mx - 34, my - 26, 68, 52);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(mx - 22, my - 28, 44, 56);
+    ctx.fillRect(mx - 28, my - 22, 56, 44);
+    ctx.fillStyle = '#8793a3';
+    ctx.fillRect(mx - 18, my - 20, 36, 40);
+    ctx.fillRect(mx - 20, my - 18, 40, 36);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(mx - 4, my - 20, 8, 4);
+    ctx.fillRect(mx - 20, my - 4, 4, 8);
+    ctx.fillRect(mx + 16, my - 4, 4, 8);
+    ctx.fillRect(mx - 4, my + 16, 8, 4);
+    ctx.fillStyle = '#d8be88';
+    ctx.fillRect(mx - 12, my - 12, 8, 2);
+    ctx.fillRect(mx + 4, my - 12, 8, 2);
+    ctx.fillRect(mx - 12, my + 10, 8, 2);
+    ctx.fillRect(mx + 4, my + 10, 8, 2);
+    ctx.fillStyle = animFrame4 % 2 === 0 ? '#5cc8ff' : '#fde047';
+    ctx.fillRect(mx - 3, my - 3, 6, 6);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(mx - 1, my - 1, 2, 2);
   }
 
   // 4F. La Costa de las Máquinas Olvidadas: Columnas antiguas, Altar del Origen y Recreativa semienterrada
@@ -2542,6 +3039,29 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
     }
   }
 
+  for (const entrance of ISLAND_NORTH_CAVE_ENTRANCES) {
+    if (!isWorldBoxVisible(entrance.x - 36, entrance.y - 46, 72, 58, camX, camY, vw, vh)) {
+      continue;
+    }
+    ySortedDrawables.push({
+      sortY: entrance.y,
+      draw: () => {
+        ctx.fillStyle = '#101820';
+        ctx.fillRect(entrance.x - 32, entrance.y - 38, 64, 42);
+        ctx.fillStyle = '#53616c';
+        ctx.fillRect(entrance.x - 28, entrance.y - 34, 56, 34);
+        ctx.fillStyle = '#81909a';
+        ctx.fillRect(entrance.x - 24, entrance.y - 36, 12, 8);
+        ctx.fillRect(entrance.x + 12, entrance.y - 36, 12, 8);
+        ctx.fillStyle = '#08121b';
+        ctx.fillRect(entrance.x - 16, entrance.y - 22, 32, 26);
+        ctx.fillStyle = entrance.accentHex;
+        ctx.fillRect(entrance.x - 22, entrance.y - 28, 4, 4);
+        ctx.fillRect(entrance.x + 18, entrance.y - 28, 4, 4);
+      },
+    });
+  }
+
   for (const npc of ISLAND_NPCS) {
     if (!isWorldBoxVisible(npc.x - 20, npc.y - 36, 40, 48, camX, camY, vw, vh)) continue;
     ySortedDrawables.push({
@@ -2653,6 +3173,11 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
         y: WATERFALL_SECRET_ENTRANCE.y,
         tag: '¡GRUTA TRAS CASCADA!',
       },
+      ...ISLAND_NORTH_CAVE_ENTRANCES.map((entrance) => ({
+        x: entrance.x,
+        y: entrance.y,
+        tag: 'CAVIDAD BOREAL',
+      })),
       {
         x: LABYRINTH_1976_ENTRANCE.x,
         y: LABYRINTH_1976_ENTRANCE.y,

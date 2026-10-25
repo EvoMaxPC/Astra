@@ -14,7 +14,8 @@
  */
 
 export const ISLAND_WORLD_W = 3640;
-export const ISLAND_WORLD_H = 2240;
+export const ISLAND_WORLD_TOP = -800;
+export const ISLAND_WORLD_H = 3040;
 export const GBC_TILE_SIZE = 16;
 
 export type GbcBiomeType = 'village' | 'meadow' | 'forest' | 'volcanic' | 'coast';
@@ -28,6 +29,7 @@ export type IslandZoneId =
   | 'fortaleza-oleadas'
   | 'cavernas-codigo'
   | 'cumbre-arquitecto'
+  | 'cumbre-septentrional'
   | 'puerto-islas-perdidas';
 
 export interface WalkableRect {
@@ -201,6 +203,17 @@ export const ISLAND_ZONES: Record<IslandZoneId, IslandZoneMeta> = {
     ambientTint: 'rgba(253, 224, 71, 0.04)',
     mapCenter: { x: 1960, y: 290 },
   },
+  'cumbre-septentrional': {
+    id: 'cumbre-septentrional',
+    numberLabel: 'SECTOR 10 · CORDILLERA DEL PRIMER PULSO',
+    macroRegionTitle: 'LA CORDILLERA DEL PRIMER PULSO',
+    name: 'La Cordillera del Primer Pulso',
+    subtitle: 'Terrazas boreales, archivos de cartógrafos y cavernas de resonancia bajo la nieve',
+    biome: 'volcanic',
+    accentHex: '#67e8f9',
+    ambientTint: 'rgba(103, 232, 249, 0.045)',
+    mapCenter: { x: 1952, y: -352 },
+  },
   'cavernas-codigo': {
     id: 'cavernas-codigo',
     numberLabel: 'SECTOR 07 · CAVERNAS DE MEMORIA',
@@ -290,6 +303,12 @@ export const ISLAND_WALKABLE_RECTS: WalkableRect[] = [
   { id: 'fortaleza-star-pad', x: 2512, y: 368, w: 352, h: 160, zoneId: 'fortaleza-oleadas', surface: 'fortress' },
   { id: 'cumbre-stairway', x: 2176, y: 272, w: 384, h: 208, zoneId: 'cumbre-arquitecto', surface: 'fortress' },
   { id: 'cumbre-sanctuary', x: 1552, y: 160, w: 800, h: 288, zoneId: 'cumbre-arquitecto', surface: 'stone' },
+
+  // SECTOR 10: Cordillera septentrional conectada a la terraza de la Cumbre (sin desplazar el mapa existente)
+  { id: 'north-spine', x: 1504, y: -560, w: 848, h: 720, zoneId: 'cumbre-septentrional', surface: 'stone' },
+  { id: 'north-west-shelf', x: 1104, y: -320, w: 464, h: 352, zoneId: 'cumbre-septentrional', surface: 'grass' },
+  { id: 'north-east-shelf', x: 2288, y: -288, w: 688, h: 320, zoneId: 'cumbre-septentrional', surface: 'stone' },
+  { id: 'north-aurora-plateau', x: 1712, y: -800, w: 512, h: 256, zoneId: 'cumbre-septentrional', surface: 'crystal' },
 
   // ZONA 5: La Costa y las Ruinas del Tiempo (Playa oriental, ruinas costeras y muelle)
   { id: 'fortaleza-to-puerto', x: 2960, y: 896, w: 240, h: 224, zoneId: 'puerto-islas-perdidas', surface: 'sand' },

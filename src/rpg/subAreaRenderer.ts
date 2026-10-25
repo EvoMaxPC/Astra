@@ -628,6 +628,7 @@ export function renderSubAreaFrame(params: SubAreaRenderParams): void {
     } else if (prop.kind === 'museum-pedestal') {
       const exhibit = MUSEUM_1970S_EXHIBITS.find((e) => e.id === prop.exhibitId);
       const isPlayable = exhibit?.mode === 'playable';
+      const isPending = exhibit?.mode === 'playable-pending';
       const gameId = exhibit?.linkedGameId;
       const isEncryptedBreakout =
         gameId === 'breakout' &&
@@ -652,10 +653,12 @@ export function renderSubAreaFrame(params: SubAreaRenderParams): void {
       ctx.fillRect(prop.x, prop.y, prop.w, prop.h);
       ctx.strokeStyle = isEncryptedBreakout
         ? '#64748b'
+        : isPending
+        ? '#fbbf24'
         : isRestored
         ? prop.accentHex
         : 'rgba(148, 163, 184, 0.55)';
-      ctx.lineWidth = isPlayable ? 2.5 : 1.5;
+      ctx.lineWidth = isPlayable || isPending ? 2.5 : 1.5;
       ctx.strokeRect(prop.x, prop.y, prop.w, prop.h);
 
       // Vitrina / Holograma específico de cada hito de los años 70
@@ -706,7 +709,7 @@ export function renderSubAreaFrame(params: SubAreaRenderParams): void {
       }
 
       // Indicador frontal: JUGABLE vs EXHIBICIÓN
-      ctx.fillStyle = isPlayable ? prop.accentHex : '#94a3b8';
+      ctx.fillStyle = isPlayable ? prop.accentHex : isPending ? '#fbbf24' : '#94a3b8';
       ctx.fillRect(prop.x + 10, prop.y + prop.h - 9, prop.w - 20, 4);
 
       if (prop.label) {
