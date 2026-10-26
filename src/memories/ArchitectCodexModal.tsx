@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import { BookOpen, Compass, Diamond, Sparkles, X } from 'lucide-react';
 import { retroAudio } from '../audio/retroAudio';
 import { getHistoricalMemory, MUSEUM_1970S_EXHIBITS } from './historicalCatalog';
+import { MuseumExhibitIllustration } from './MuseumExhibitIllustration';
 import {
   BREAKOUT_UNLOCK_SCORE,
   PixelAbilityId,
@@ -323,6 +324,7 @@ export function ArchitectCodexModal({
           {tab === 'museum' &&
             MUSEUM_1970S_EXHIBITS.map((exhibit) => {
               const isPlayable = exhibit.mode === 'playable';
+              const isPlayablePending = exhibit.mode === 'playable-pending';
               const gameRec = exhibit.linkedGameId
                 ? progressState.games[exhibit.linkedGameId]
                 : undefined;
@@ -349,25 +351,64 @@ export function ArchitectCodexModal({
                     </h3>
                     <span
                       className="font-mono-tabular text-[11px]"
-                      style={{ color: isPlayable ? '#fde047' : '#7dd3fc' }}
+                      style={{
+                        color: isPlayable
+                          ? '#fde047'
+                          : isPlayablePending
+                          ? '#fbbf24'
+                          : '#7dd3fc',
+                      }}
                     >
                       {isPlayable
                         ? 'Videojuego Jugable en PIXELVERSE'
+                        : isPlayablePending
+                        ? 'Desafío Jugable Acordado · Implementación Pendiente'
                         : 'Exhibición Histórica Documentada'}
                     </span>
                   </div>
 
                   {isUnlockedOrInspected && !isEncryptedBreakout ? (
                     <>
+                      <figure className="max-w-sm space-y-1.5">
+                        <MuseumExhibitIllustration
+                          exhibit={exhibit}
+                          className="block w-full border border-white/20 bg-[#08121f]"
+                        />
+                        <figcaption className="text-[10px] text-slate-400 font-mono">
+                          Ilustración original de PIXELVERSE; no es fotografía histórica.
+                        </figcaption>
+                      </figure>
                       <p className="text-xs font-mono-tabular text-cyan-200/90">
                         {exhibit.creator} · {exhibit.company} · {exhibit.hardwareType}
                       </p>
+                      <p className="text-xs text-slate-200 font-ui">
+                        Género: {exhibit.genre}
+                      </p>
+                      <p className="text-xs text-slate-200 font-ui">
+                        Mecánicas: {exhibit.mechanics}
+                      </p>
+                      <p className="text-xs text-slate-200 font-ui">
+                        Aporte histórico: {exhibit.historicalContribution}
+                      </p>
+                      <p className="text-xs text-amber-200/90 font-ui">
+                        Dato curioso: {exhibit.funFact}
+                      </p>
                       <p className="text-sm text-slate-200 font-ui leading-relaxed">
-                        {exhibit.historicalSummary}
+                        {isPlayablePending
+                          ? `${exhibit.historicalSummary} El desafío está planificado, pero todavía no existe una implementación jugable.`
+                          : exhibit.historicalSummary}
                       </p>
                       <p className="text-xs text-slate-400 font-ui">
                         Nota curatorial: {exhibit.curatorialNote}
                       </p>
+                      <a
+                        href={exhibit.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block text-xs text-cyan-300 underline underline-offset-2 hover:text-cyan-100"
+                      >
+                        Fuente: {exhibit.sourceLabel}
+                      </a>
                     </>
                   ) : isEncryptedBreakout ? (
                     <p className="text-xs text-amber-200/90 font-ui">

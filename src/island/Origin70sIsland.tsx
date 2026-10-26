@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * MOTOR RPG 2D CENITAL DE PIXELVERSE:
- * - La Gran Isla de los 70 (9 zonas interconectadas + arquitectura accesible)
+ * - La Gran Isla de los 70 (10 zonas interconectadas + arquitectura accesible)
  * - Movimiento y animaciones pixel-art en 4 direcciones, carrera e interacción
  * - Interiores accesibles, cámara oculta tras pared falsa, gruta oscura tras cascada
  * - Expansión jugable inter-islas hacia «Isla Neón 1980s: Muelle de las Vigas Rojas»
@@ -15,6 +15,7 @@ import { Map as MapIcon } from 'lucide-react';
 import { retroAudio } from '../audio/retroAudio';
 import { ArchitectCodexModal } from '../memories/ArchitectCodexModal';
 import { MUSEUM_1970S_EXHIBITS } from '../memories/historicalCatalog';
+import { MuseumExhibitIllustration } from '../memories/MuseumExhibitIllustration';
 import {
   BREAKOUT_UNLOCK_SCORE,
   PONG_UNLOCK_SCORE,
@@ -32,6 +33,7 @@ import {
   HARBOR_80S_FERRY,
   ISLAND_70S_BUILDINGS,
   ISLAND_ANOMALY_PORTALS,
+  ISLAND_NORTH_CAVE_ENTRANCES,
   ISLAND_WOODEN_SIGNS,
   isBlockedByExteriorBuilding,
   isWalkableInSubArea,
@@ -62,6 +64,7 @@ import {
   ISLAND_SWITCHES,
   ISLAND_WALKABLE_RECTS,
   ISLAND_WORLD_H,
+  ISLAND_WORLD_TOP,
   ISLAND_WORLD_W,
   ISLAND_ZONES,
   IslandZoneId,
@@ -72,6 +75,8 @@ import {
   IslandPickupBurst,
   renderIsland70sFrame,
 } from './island70sRenderer';
+
+const ISLAND_CAMERA_TOP = ISLAND_WORLD_TOP - 48;
 
 export type Island70sArrivalMode =
   | 'awakening'
@@ -154,6 +159,7 @@ interface InteractivePromptTarget {
     | 'switch'
     | 'vista'
     | 'building-door'
+    | 'cave-entrance'
     | 'waterfall-entrance'
     | 'ferry-80s'
     | 'broken-relay'
@@ -175,6 +181,8 @@ interface ActiveDialogModal {
   paragraphs: string[];
   hint?: string;
   accentHex: string;
+  museumExhibit?: (typeof MUSEUM_1970S_EXHIBITS)[number];
+  disabledAction?: string;
   primaryAction?: {
     label: string;
     onSelect: () => void;
@@ -403,6 +411,7 @@ export function Origin70sIsland({
   const [activeDialog, setActiveDialog] = useState<ActiveDialogModal | null>(null);
   const [codexOpen, setCodexOpen] = useState<boolean>(false);
   const [inventoryOpen, setInventoryOpen] = useState<boolean>(false);
+  const [inventoryClosing, setInventoryClosing] = useState<boolean>(false);
   const [questsOpen, setQuestsOpen] = useState<boolean>(false);
   const [vectorModalOpen, setVectorModalOpen] = useState<boolean>(false);
   const [vectorAngles, setVectorAngles] = useState<[number, number, number]>([0, 45, 90]);
@@ -414,11 +423,21 @@ export function Origin70sIsland({
     y: initSetupRef.current.y,
   });
 
+  const closeInventory = () => {
+    if (latestStateRef.current.inventoryClosing) return;
+    setInventoryClosing(true);
+    window.setTimeout(() => {
+      setInventoryOpen(false);
+      setInventoryClosing(false);
+    }, 140);
+  };
+
   const anyModalOpen =
     Boolean(externalModalOpen) ||
     Boolean(activeDialog) ||
     codexOpen ||
     inventoryOpen ||
+    inventoryClosing ||
     questsOpen ||
     vectorModalOpen ||
     chronoWarpActive;
@@ -437,6 +456,8 @@ export function Origin70sIsland({
     southShortcutActive,
     progressState,
     modalOpen: anyModalOpen,
+    inventoryOpen,
+    inventoryClosing,
     chronoWarpActive,
   });
   latestStateRef.current = {
@@ -453,6 +474,8 @@ export function Origin70sIsland({
     southShortcutActive,
     progressState,
     modalOpen: anyModalOpen,
+    inventoryOpen,
+    inventoryClosing,
     chronoWarpActive,
   };
 
@@ -1008,6 +1031,30 @@ export function Origin70sIsland({
           bldg.targetSpawnY,
           'up',
           `Entrando a ${bldg.name}`
+        );
+        return;
+      }
+
+      if (target.kind === 'cave-entrance') {
+        const cave = ISLAND_NORTH_CAVE_ENTRANCES.find((entry) => entry.id === target.id);
+        if (!cave) return;
+        const firstDiscovery = !st.progressState.rpg.discoveredSecretIds.includes(
+          cave.secretId
+        );
+        if (firstDiscovery) {
+          retroAudio.secretFound();
+          callbacksRef.current.onDiscoverSecret(cave.secretId);
+        }
+        exteriorReturnPosRef.current = {
+          x: cave.returnExteriorX,
+          y: cave.returnExteriorY,
+        };
+        transitionToArea(
+          cave.targetArea,
+          cave.targetSpawnX,
+          cave.targetSpawnY,
+          'up',
+          firstDiscovery ? `¡${cave.label} descubierta!` : cave.label
         );
         return;
       }
@@ -1744,18 +1791,32 @@ export function Origin70sIsland({
           category:
             exhibit.mode === 'playable'
               ? `MUSEO VIVIENTE · VIDEOJUEGO JUGABLE (${exhibit.year})`
+              : exhibit.mode === 'playable-pending'
+              ? `MUSEO VIVIENTE · DESAFÍO JUGABLE PENDIENTE (${exhibit.year})`
               : `MUSEO VIVIENTE · EXHIBICIÓN HISTÓRICA DOCUMENTADA (${exhibit.year})`,
           title: `${exhibit.title} (${exhibit.year})`,
           subtitle: `${exhibit.creator} · ${exhibit.company}`,
           paragraphs: [
-            exhibit.historicalSummary,
-            `Hardware: ${exhibit.hardwareType} · ${exhibit.curatorialNote}`,
+            exhibit.museumProfile,
+            `Género: ${exhibit.genre}`,
+            `Mecánicas: ${exhibit.mechanics}`,
+            `Aporte histórico: ${exhibit.historicalContribution}`,
+            `Dato curioso: ${exhibit.funFact}`,
+            `Hardware: ${exhibit.hardwareType}`,
+            `Nota curatorial: ${exhibit.curatorialNote}`,
           ],
           hint:
             exhibit.mode === 'playable'
               ? 'Este título forma parte del catálogo jugable activo de PIXELVERSE.'
+              : exhibit.mode === 'playable-pending'
+              ? 'Desafío acordado, pero su implementación sigue pendiente. No se puede iniciar una partida desde esta vitrina.'
               : 'Pieza de archivo documental e interactivo del Museo Viviente de los años 70.',
           accentHex: exhibit.accentHex,
+          museumExhibit: exhibit,
+          disabledAction:
+            exhibit.mode === 'playable-pending'
+              ? 'Asteroids · implementación pendiente'
+              : undefined,
           primaryAction,
         });
         return;
@@ -2018,10 +2079,15 @@ export function Origin70sIsland({
 
     let vw = window.innerWidth;
     let vh = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Zoom único del mundo exterior; el minimapa vive en la interfaz fija.
+    const cameraZoom = 1.75;
+    const worldViewWidth = () => vw / cameraZoom;
+    const worldViewHeight = () => vh / cameraZoom;
     const resize = () => {
       vw = window.innerWidth;
       vh = window.innerHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(vw * dpr);
       canvas.height = Math.floor(vh * dpr);
       canvas.style.width = `${vw}px`;
@@ -2043,22 +2109,67 @@ export function Origin70sIsland({
     };
 
     const camera = {
-      x: Math.max(0, Math.min(ISLAND_WORLD_W - vw, player.x - vw * 0.5)),
-      y: Math.max(0, Math.min(ISLAND_WORLD_H - vh, player.y - vh * 0.5)),
+      x: Math.max(
+        0,
+        Math.min(ISLAND_WORLD_W - worldViewWidth(), player.x - worldViewWidth() * 0.5)
+      ),
+      y: Math.max(
+        ISLAND_CAMERA_TOP,
+        Math.min(ISLAND_WORLD_TOP + ISLAND_WORLD_H - worldViewHeight(), player.y - worldViewHeight() * 0.5)
+      ),
     };
 
     const keys: Record<string, boolean> = {};
     const isEditable = (el: EventTarget | null) =>
       el instanceof HTMLElement &&
-      (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      (el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable ||
+        Boolean(el.closest('[contenteditable="true"]')));
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isEditable(e.target)) return;
       const code = e.code;
-      keys[code] = true;
-
       const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
       const lowerKey = e.key.toLowerCase();
+
+      if (!hasModifier && code === 'KeyM' && activeAreaRef.current === 'exterior-70s') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (e.repeat || latestStateRef.current.modalOpen) return;
+        setMinimapOpen((prev) => !prev);
+        retroAudio.uiClick();
+        return;
+      }
+
+      if (
+        !hasModifier &&
+        code === 'Enter' &&
+        !latestStateRef.current.chronoWarpActive &&
+        (latestStateRef.current.inventoryOpen || !latestStateRef.current.modalOpen)
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (e.repeat) return;
+        if (latestStateRef.current.inventoryOpen) {
+          closeInventory();
+        } else if (!latestStateRef.current.modalOpen) {
+          for (const key of Object.keys(keys)) keys[key] = false;
+          const virtualInput = virtualInputRef.current;
+          virtualInput.up = false;
+          virtualInput.down = false;
+          virtualInput.left = false;
+          virtualInput.right = false;
+          virtualInput.sprint = false;
+          virtualInput.clickTarget = null;
+          setInventoryOpen(true);
+        }
+        retroAudio.uiClick();
+        return;
+      }
+
+      keys[code] = true;
 
       if (code === 'Escape') {
         if (latestStateRef.current.modalOpen && !latestStateRef.current.chronoWarpActive) {
@@ -2066,7 +2177,7 @@ export function Origin70sIsland({
           if (e.repeat) return;
           setActiveDialog(null);
           setCodexOpen(false);
-          setInventoryOpen(false);
+          closeInventory();
           setQuestsOpen(false);
           setVectorModalOpen(false);
           return;
@@ -2141,6 +2252,7 @@ export function Origin70sIsland({
             !latestStateRef.current.chronoWarpActive
           ) {
             e.preventDefault();
+            if (code === 'Enter') e.stopImmediatePropagation();
             setActiveDialog(null);
             setCodexOpen(false);
             setInventoryOpen(false);
@@ -2173,10 +2285,13 @@ export function Origin70sIsland({
       const sy = e.clientY - rect.top;
 
       const curArea = activeAreaRef.current;
-      let wx = sx + camera.x;
-      let wy = sy + camera.y;
+      let wx = sx;
+      let wy = sy;
 
-      if (curArea !== 'exterior-70s') {
+      if (curArea === 'exterior-70s') {
+        wx = sx / cameraZoom + camera.x;
+        wy = sy / cameraZoom + camera.y;
+      } else {
         const sub = SUB_AREAS[curArea];
         const subCamX =
           sub.width <= vw
@@ -2239,7 +2354,7 @@ export function Origin70sIsland({
 
     const ambientBits = Array.from({ length: 85 }, (_, i) => ({
       x: 240 + ((i * 173) % (ISLAND_WORLD_W - 420)),
-      y: 220 + ((i * 131) % (ISLAND_WORLD_H - 360)),
+      y: ISLAND_WORLD_TOP + 220 + ((i * 131) % (ISLAND_WORLD_H - 360)),
       vy: -12 - (i % 4) * 7,
       phase: i * 0.9,
       color: i % 3 === 0 ? '#00f3ff' : i % 3 === 1 ? '#34d399' : '#facc15',
@@ -2294,6 +2409,8 @@ export function Origin70sIsland({
       const dt = Math.min(0.05, (now - prevTime) / 1000);
       prevTime = now;
       elapsed += dt;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, vw, vh);
 
       // Aplicar teletransporte pendiente al cambiar entre exterior, interiores o Isla 80s
       if (playerPosBridgeRef.current.teleportPending) {
@@ -2310,8 +2427,17 @@ export function Origin70sIsland({
         pickupBursts.length = 0;
         lastTileSteppedId = '';
         if (activeAreaRef.current === 'exterior-70s') {
-          camera.x = Math.max(0, Math.min(ISLAND_WORLD_W - vw, player.x - vw * 0.5));
-          camera.y = Math.max(0, Math.min(ISLAND_WORLD_H - vh, player.y - vh * 0.5));
+          camera.x = Math.max(
+            0,
+            Math.min(ISLAND_WORLD_W - worldViewWidth(), player.x - worldViewWidth() * 0.5)
+          );
+          camera.y = Math.max(
+            ISLAND_CAMERA_TOP,
+            Math.min(
+              ISLAND_WORLD_TOP + ISLAND_WORLD_H - worldViewHeight(),
+              player.y - worldViewHeight() * 0.5
+            )
+          );
         }
       }
 
@@ -2522,17 +2648,19 @@ export function Origin70sIsland({
                   steppedTilesRef.current = [...steppedTilesRef.current, tile.orderIndex];
                   retroAudio.shardCollect(tile.orderIndex);
                   spawnBurst(tile.x, tile.y, tile.accentHex, 14);
-                  if (steppedTilesRef.current.length === 3) {
+                  if (steppedTilesRef.current.length === subSpec.pressurePuzzle.tiles.length) {
                     retroAudio.secretFound();
                     callbacksRef.current.onSolvePuzzle(subSpec.pressurePuzzle.puzzleId);
                     showToast(subSpec.pressurePuzzle.successMessage);
                   } else {
-                    showToast(`Nodo ${tile.label} activado (${steppedTilesRef.current.length}/3)`);
+                    showToast(
+                      `Nodo ${tile.label} activado (${steppedTilesRef.current.length}/${subSpec.pressurePuzzle.tiles.length})`
+                    );
                   }
                 } else {
                   steppedTilesRef.current = [];
                   retroAudio.npcBlip(0.68);
-                  showToast('Secuencia reiniciada · Respeta el orden I → II → III');
+                  showToast('Secuencia reiniciada · Consulta la pista de esta cámara');
                 }
               }
             }
@@ -2702,6 +2830,21 @@ export function Origin70sIsland({
                 accentHex: bldg.trimHex,
               },
               84
+            );
+          }
+
+          for (const cave of ISLAND_NORTH_CAVE_ENTRANCES) {
+            consider(
+              {
+                kind: 'cave-entrance',
+                id: cave.id,
+                label: cave.label,
+                actionLabel: cave.actionLabel,
+                x: cave.x,
+                y: cave.y + 6,
+                accentHex: cave.accentHex,
+              },
+              78
             );
           }
 
@@ -2977,8 +3120,20 @@ export function Origin70sIsland({
           setPlayerMiniPos({ x: player.x, y: player.y });
         }
 
-        const targetCamX = Math.max(0, Math.min(ISLAND_WORLD_W - vw, player.x - vw * 0.5));
-        const targetCamY = Math.max(0, Math.min(ISLAND_WORLD_H - vh, player.y - vh * 0.5));
+        const targetCamX = Math.max(
+          0,
+          Math.min(
+            ISLAND_WORLD_W - worldViewWidth(),
+            player.x - worldViewWidth() * 0.5
+          )
+        );
+        const targetCamY = Math.max(
+          ISLAND_CAMERA_TOP,
+          Math.min(
+            ISLAND_WORLD_TOP + ISLAND_WORLD_H - worldViewHeight(),
+            player.y - worldViewHeight() * 0.5
+          )
+        );
         camera.x += (targetCamX - camera.x) * Math.min(1, dt * 6.5);
         camera.y += (targetCamY - camera.y) * Math.min(1, dt * 6.5);
 
@@ -2998,33 +3153,39 @@ export function Origin70sIsland({
           setNearbyPrompt(resolvedTarget);
         }
 
-        renderIsland70sFrame({
-          ctx,
-          vw,
-          vh,
-          camera,
-          elapsed,
-          reducedMotion,
-          stars,
-          ambientBits,
-          digitalCritters,
-          pickupBursts,
-          player,
-          flight,
-          skinColor: st.skinColor,
-          hairColor: st.hairColor,
-          shirtColor: st.shirtColor,
-          pongRestored: st.pongRestored,
-          glitchTrailCleared: st.glitchTrailCleared,
-          invadersRestored: st.invadersRestored,
-          invadersCabinetUnlocked: st.invadersCabinetUnlocked,
-          southShortcutActive: st.southShortcutActive,
-          allUnlocked: st.allUnlocked,
-          progressState: st.progressState,
-          activeZoneId: activeRect ? activeRect.zoneId : null,
-          prompt: st.modalOpen ? null : nearbyPromptRef.current,
-          scannerPulse: scannerPulseRef.current,
-        });
+        ctx.save();
+        try {
+          ctx.setTransform(dpr * cameraZoom, 0, 0, dpr * cameraZoom, 0, 0);
+          renderIsland70sFrame({
+            ctx,
+            vw: worldViewWidth(),
+            vh: worldViewHeight(),
+            camera,
+            elapsed,
+            reducedMotion,
+            stars,
+            ambientBits,
+            digitalCritters,
+            pickupBursts,
+            player,
+            flight,
+            skinColor: st.skinColor,
+            hairColor: st.hairColor,
+            shirtColor: st.shirtColor,
+            pongRestored: st.pongRestored,
+            glitchTrailCleared: st.glitchTrailCleared,
+            invadersRestored: st.invadersRestored,
+            invadersCabinetUnlocked: st.invadersCabinetUnlocked,
+            southShortcutActive: st.southShortcutActive,
+            allUnlocked: st.allUnlocked,
+            progressState: st.progressState,
+            activeZoneId: activeRect ? activeRect.zoneId : null,
+            prompt: st.modalOpen ? null : nearbyPromptRef.current,
+            scannerPulse: scannerPulseRef.current,
+          });
+        } finally {
+          ctx.restore();
+        }
       } else {
         // Sub-área activa: Interior accesible, sala secreta, cueva o Isla Neón 1980s
         const subSpec = SUB_AREAS[curArea];
@@ -3189,7 +3350,11 @@ export function Origin70sIsland({
                 label: isEncrypted
                   ? 'Pedestal 1976 · Vitrina Cifrada'
                   : `${exhibit.year} · ${exhibit.title} (${
-                      exhibit.mode === 'playable' ? 'Jugable' : 'Exhibición'
+                      exhibit.mode === 'playable'
+                        ? 'Jugable'
+                        : exhibit.mode === 'playable-pending'
+                        ? 'Desafío pendiente'
+                        : 'Exhibición'
                     })`,
                 actionLabel: 'Inspeccionar Vitrina',
                 x: spot.x,
@@ -3352,7 +3517,7 @@ export function Origin70sIsland({
   const eraBadgeText =
     activeAreaId === 'island-80s'
       ? 'ISLA 1980s'
-      : `ISLA DEL ORIGEN · ${progressState.island70s.visitedZones.length}/9 ZONAS`;
+      : `ISLA DEL ORIGEN · ${progressState.island70s.visitedZones.length}/10 ZONAS`;
 
   const currentLocationName = activeSubArea
     ? activeSubArea.name
@@ -3363,6 +3528,203 @@ export function Origin70sIsland({
   const currentLocationSubtitle = activeSubArea
     ? activeSubArea.subtitle
     : currentZone.subtitle;
+
+  const renderMinimapMap = () => {
+    const mapY = (y: number) => `${((y - ISLAND_WORLD_TOP) / ISLAND_WORLD_H) * 100}%`;
+    return (
+      <div
+      role="img"
+      aria-label="Minimapa completo de la Isla del Origen con terreno, caminos, edificios y posición del jugador"
+      className="relative w-full overflow-hidden border-2 border-[#070b14] bg-[#134e6f]"
+      style={{ aspectRatio: ISLAND_WORLD_W / ISLAND_WORLD_H }}
+    >
+      <div className="absolute inset-[3%] overflow-hidden">
+        {ISLAND_WALKABLE_RECTS.map((r) => {
+          if (r.requiresCondition === 'south-shortcut' && !southShortcutActive) return null;
+          if (r.requiresCondition === 'garganta-bridge' && !glitchTrailCleared) return null;
+
+          const colorClass =
+            r.surface === 'pier'
+              ? 'bg-[#9c6834]'
+              : r.surface === 'bridge'
+              ? 'bg-[#b45309]'
+              : r.surface === 'sand'
+              ? 'bg-[#e4ca86]'
+              : r.surface === 'fortress'
+              ? 'bg-[#7f1d1d]'
+              : r.surface === 'crystal'
+              ? 'bg-[#6b4b83]'
+              : r.zoneId === 'bosque-circuitos'
+              ? 'bg-[#15803d]'
+              : r.zoneId === 'costa-despertar'
+              ? 'bg-[#cbd5a0]'
+              :               r.zoneId === 'cumbre-septentrional'
+                ? 'bg-[#64748b]'
+                : r.zoneId === 'puerto-islas-perdidas'
+              ? 'bg-[#d6bc88]'
+              : 'bg-[#4ade80]';
+
+          return (
+            <div
+              key={r.id}
+              style={{
+                left: `${(r.x / ISLAND_WORLD_W) * 100}%`,
+                top: mapY(r.y),
+                width: `${(r.w / ISLAND_WORLD_W) * 100}%`,
+                height: `${(r.h / ISLAND_WORLD_H) * 100}%`,
+              }}
+              className={`absolute ${colorClass}`}
+            />
+          );
+        })}
+
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`0 ${ISLAND_WORLD_TOP} ${ISLAND_WORLD_W} ${ISLAND_WORLD_H}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <g
+            fill="none"
+            stroke="#59472f"
+            strokeWidth="38"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
+          >
+            <path d="M416 1760 H560 V1808 H688 V1856 H944" />
+            <path d="M560 1808 H544 V1936 H672 V1952 H816" />
+            <path d="M640 1600 V1488 H672 V1408 H816 V1360 H928 V1280 H960 V1104" />
+            <path d="M928 1280 H1616" />
+            <path d="M1616 1280 H1888 V1200 H1936 H2144 V1424 V1584 H2592 H2816 V1616" />
+            <path d="M1888 1280 H1760 V1424 H1664 V1536" />
+            <path d="M1648 1280 V1056" />
+            <path d="M2688 1568 V1360" />
+            <path d="M1952 160 V80 V-112 V-448 V-640" />
+            <path d="M1952 -144 H1552 H1392 H1240" />
+            <path d="M1952 -128 H2352 H2608 H2848" />
+          </g>
+          <g
+            fill="none"
+            stroke="#d3bb8b"
+            strokeWidth="22"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
+          >
+            <path d="M416 1760 H560 V1808 H688 V1856 H944" />
+            <path d="M560 1808 H544 V1936 H672 V1952 H816" />
+            <path d="M640 1600 V1488 H672 V1408 H816 V1360 H928 V1280 H960 V1104" />
+            <path d="M928 1280 H1616" />
+            <path d="M1616 1280 H1888 V1200 H1936 H2144 V1424 V1584 H2592 H2816 V1616" />
+            <path d="M1888 1280 H1760 V1424 H1664 V1536" />
+            <path d="M1648 1280 V1056" />
+            <path d="M2688 1568 V1360" />
+            <path d="M1952 160 V80 V-112 V-448 V-640" />
+            <path d="M1952 -144 H1552 H1392 H1240" />
+            <path d="M1952 -128 H2352 H2608 H2848" />
+          </g>
+        </svg>
+
+        {ISLAND_70S_BUILDINGS.map((building) => (
+          <div
+            key={building.id}
+            title={building.name}
+            style={{
+              left: `${(building.x / ISLAND_WORLD_W) * 100}%`,
+              top: mapY(building.y),
+              width: `${(building.w / ISLAND_WORLD_W) * 100}%`,
+              height: `${(building.h / ISLAND_WORLD_H) * 100}%`,
+            }}
+            className="absolute border border-[#2d241d] bg-[#8b5a3c]"
+          />
+        ))}
+
+        <div
+          title="Punto de Guardado · El Pueblo del Origen"
+          style={{
+            left: `${(VILLAGE_SAVE_TERMINAL.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(VILLAGE_SAVE_TERMINAL.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#38bdf8]"
+        />
+        <div
+          title="Pong (1972)"
+          style={{
+            left: `${(ISLAND_KEY_COORDS.pongCabinet.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(ISLAND_KEY_COORDS.pongCabinet.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#fde047]"
+        />
+        <div
+          title="Sendero del Glitch"
+          style={{
+            left: `${(ISLAND_KEY_COORDS.glitchTrailPortal.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(ISLAND_KEY_COORDS.glitchTrailPortal.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#00f3ff]"
+        />
+        <div
+          title="Space Invaders (1978)"
+          style={{
+            left: `${(ISLAND_KEY_COORDS.invadersCabinet.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(ISLAND_KEY_COORDS.invadersCabinet.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#ef4444]"
+        />
+        <div
+          title="Observatorio del Cronoscopio"
+          style={{
+            left: `${(2150 / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(1140),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#c084fc]"
+        />
+        <div
+          title="Museo Viviente de los 70"
+          style={{
+            left: `${(1648 / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(1012),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#22d3ee]"
+        />
+        <div
+          title="Escotilla Breakout"
+          style={{
+            left: `${(LABYRINTH_1976_ENTRANCE.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(LABYRINTH_1976_ENTRANCE.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#f97316]"
+        />
+        <div
+          title="Muelle y ferry a la Isla Neón 1980s"
+          style={{
+            left: `${(HARBOR_80S_FERRY.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(HARBOR_80S_FERRY.y),
+          }}
+          className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 border border-black bg-[#f472b6]"
+        />
+        {ISLAND_NORTH_CAVE_ENTRANCES.map((cave) => (
+          <div
+            key={cave.id}
+            title={cave.label}
+            style={{
+              left: `${(cave.x / ISLAND_WORLD_W) * 100}%`,
+              top: mapY(cave.y),
+            }}
+            className="absolute h-[3%] w-[1.5%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#07111a] bg-[#67e8f9]"
+          />
+        ))}
+        <div
+          title="Posición del jugador"
+          style={{
+            left: `${(playerMiniPos.x / ISLAND_WORLD_W) * 100}%`,
+            top: mapY(playerMiniPos.y),
+          }}
+          className="absolute h-[4%] w-[2%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-white shadow-[0_0_3px_1px_#020b12]"
+        />
+      </div>
+    </div>
+  );
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-[#020614]">
@@ -3396,141 +3758,42 @@ export function Origin70sIsland({
         </div>
       )}
 
-      {/* Minimapa GBC oculto por defecto; solo se muestra al pulsar [Tab] o desde [I] */}
-      {activeAreaId === 'exterior-70s' && minimapOpen && (
-        <div className="absolute bottom-3.5 right-3.5 z-20 gbc-hud-frame p-2 w-60 space-y-1.5">
-          <div className="flex items-center justify-between text-[9px] font-mono-tabular font-bold text-[#fde047] px-0.5">
-            <span className="inline-flex items-center gap-1">
-              <MapIcon className="w-3 h-3 text-[#fde047]" />
-              <span>MAPA · ISLA DEL ORIGEN</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                retroAudio.uiClick();
-                setMinimapOpen(false);
-              }}
-              className="text-white hover:text-[#fde047] cursor-pointer font-bold"
-            >
-              [Tab / X]
-            </button>
+      {activeAreaId === 'exterior-70s' && (
+        <>
+          <div className="fixed bottom-3 left-3 z-20 w-[clamp(7rem,25vw,12rem)] max-w-[calc(100vw-1.5rem)] gbc-hud-frame p-1.5 pointer-events-none">
+            <div className="mb-1 flex items-center gap-1 text-[8px] font-mono-tabular font-bold text-[#fde047]">
+              <MapIcon className="h-3 w-3 shrink-0" />
+              <span>ISLA · 70s</span>
+            </div>
+            {renderMinimapMap()}
           </div>
-          <div className="relative w-full h-36 bg-[#134e6f] border-2 border-[#070b14] overflow-hidden">
-            {ISLAND_WALKABLE_RECTS.map((r) => {
-              if (r.requiresCondition === 'south-shortcut' && !southShortcutActive) {
-                return null;
-              }
-              if (r.requiresCondition === 'garganta-bridge' && !glitchTrailCleared) {
-                return null;
-              }
-              const zBiome = ISLAND_ZONES[r.zoneId]?.biome ?? 'meadow';
-              const rectColor =
-                r.surface === 'bridge'
-                  ? 'bg-[#b45309]'
-                  : r.zoneId === 'cavernas-codigo'
-                  ? 'bg-[#6b21a8]'
-                  : zBiome === 'volcanic'
-                  ? 'bg-[#7f1d1d]'
-                  : zBiome === 'forest'
-                  ? 'bg-[#15803d]'
-                  : zBiome === 'coast'
-                  ? 'bg-[#eab308]'
-                  : zBiome === 'village'
-                  ? 'bg-[#cbd5e1]'
-                  : 'bg-[#4ade80]';
-              return (
-                <div
-                  key={r.id}
-                  style={{
-                    left: `${(r.x / ISLAND_WORLD_W) * 100}%`,
-                    top: `${(r.y / ISLAND_WORLD_H) * 100}%`,
-                    width: `${(r.w / ISLAND_WORLD_W) * 100}%`,
-                    height: `${(r.h / ISLAND_WORLD_H) * 100}%`,
+
+          {minimapOpen && (
+            <div className="fixed bottom-3 right-3 z-20 w-[min(15rem,55vw)] max-w-[calc(100vw-1.5rem)] gbc-hud-frame p-2 space-y-1.5 pointer-events-auto">
+              <div className="flex items-center justify-between text-[9px] font-mono-tabular font-bold text-[#fde047] px-0.5">
+                <span className="inline-flex items-center gap-1">
+                  <MapIcon className="w-3 h-3 text-[#fde047]" />
+                  <span>MAPA · ISLA DEL ORIGEN</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    retroAudio.uiClick();
+                    setMinimapOpen(false);
                   }}
-                  className={`absolute ${rectColor}`}
-                />
-              );
-            })}
-
-            <div
-              title="Punto de Guardado · El Pueblo del Origen"
-              style={{
-                left: `${(VILLAGE_SAVE_TERMINAL.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(VILLAGE_SAVE_TERMINAL.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 bg-[#38bdf8] border border-black"
-            />
-            <div
-              title="Zona 2 · Las Praderas del Pixel · Pong (1972)"
-              style={{
-                left: `${(ISLAND_KEY_COORDS.pongCabinet.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(ISLAND_KEY_COORDS.pongCabinet.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#fde047] border border-black"
-            />
-            <div
-              title="El Sendero del Glitch Perdido"
-              style={{
-                left: `${(ISLAND_KEY_COORDS.glitchTrailPortal.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(ISLAND_KEY_COORDS.glitchTrailPortal.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#00f3ff] border border-black"
-            />
-            <div
-              title="Zona 4 · La Fortaleza Volcánica · Space Invaders (1978)"
-              style={{
-                left: `${(ISLAND_KEY_COORDS.invadersCabinet.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(ISLAND_KEY_COORDS.invadersCabinet.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#ef4444] border border-black"
-            />
-            <div
-              title="Observatorio del Cronoscopio · Máquina del Tiempo"
-              style={{
-                left: `${(2150 / ISLAND_WORLD_W) * 100}%`,
-                top: `${(1140 / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#c084fc] border border-black"
-            />
-            <div
-              title="Museo Viviente de los 70 · Galería 1971–1979"
-              style={{
-                left: `${(1648 / ISLAND_WORLD_W) * 100}%`,
-                top: `${(1012 / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#22d3ee] border border-black"
-            />
-            <div
-              title="Escotilla Laberinto 1976 · Breakout Secreto"
-              style={{
-                left: `${(LABYRINTH_1976_ENTRANCE.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(LABYRINTH_1976_ENTRANCE.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 bg-[#f97316] border border-black"
-            />
-            <div
-              title="Muelle y Costa de las Máquinas Olvidadas · Ruta 1980s"
-              style={{
-                left: `${(HARBOR_80S_FERRY.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(HARBOR_80S_FERRY.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-[#f472b6] border border-black"
-            />
-
-            <div
-              style={{
-                left: `${(playerMiniPos.x / ISLAND_WORLD_W) * 100}%`,
-                top: `${(playerMiniPos.y / ISLAND_WORLD_H) * 100}%`,
-              }}
-              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#070b14]"
-            />
-          </div>
-
-          <div className="flex items-center justify-between text-[9px] font-mono-tabular text-slate-200 px-0.5">
-            <span>WASD / Clic · 4 Dir</span>
-            <span>Shift · Correr</span>
-          </div>
-        </div>
+                  className="text-white hover:text-[#fde047] cursor-pointer font-bold"
+                >
+                [M / TAB / X]
+                </button>
+              </div>
+              {renderMinimapMap()}
+              <div className="flex items-center justify-between text-[9px] font-mono-tabular text-slate-200 px-0.5">
+                <span>WASD / Clic · 4 Dir</span>
+                <span>Shift · Correr</span>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Notificación efímera de hallazgo o vuelo */}
@@ -3543,7 +3806,11 @@ export function Origin70sIsland({
       {/* Cuadro de diálogo narrativo estilo Game Boy Color */}
       {activeDialog && (
         <div className="fixed inset-0 z-40 bg-black/75 flex items-end sm:items-center justify-center p-4">
-          <div className="gbc-retro-box rounded-none max-w-xl w-full p-5 sm:p-6 space-y-3 relative">
+          <div
+            className={`gbc-retro-box rounded-none w-full p-5 sm:p-6 space-y-3 relative max-h-[92vh] overflow-y-auto ${
+              activeDialog.museumExhibit ? 'max-w-4xl' : 'max-w-xl'
+            }`}
+          >
             <div className="flex items-start justify-between gap-3 border-b-2 border-dashed border-white/30 pb-2.5">
               <div>
                 <p className="text-[10px] font-mono tracking-widest text-[#f2c94c] uppercase">
@@ -3568,11 +3835,44 @@ export function Origin70sIsland({
               </button>
             </div>
 
-            <div className="space-y-2 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed">
-              {activeDialog.paragraphs.map((par, idx) => (
-                <p key={idx}>{par}</p>
-              ))}
+            <div
+              className={
+                activeDialog.museumExhibit
+                  ? 'grid gap-4 md:grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.15fr)]'
+                  : ''
+              }
+            >
+              {activeDialog.museumExhibit && (
+                <figure className="space-y-2">
+                  <MuseumExhibitIllustration
+                    exhibit={activeDialog.museumExhibit}
+                    className="block w-full border-2 border-white/20 bg-[#08121f]"
+                  />
+                  <figcaption className="text-[10px] text-slate-400 font-mono">
+                    Ilustración original de PIXELVERSE; no es fotografía histórica ni imagen de archivo.
+                  </figcaption>
+                </figure>
+              )}
+              <div className="space-y-2 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed">
+                {activeDialog.paragraphs.map((par, idx) => (
+                  <p key={idx}>{par}</p>
+                ))}
+              </div>
             </div>
+
+            {activeDialog.museumExhibit && (
+              <p className="text-[10px] text-slate-400 font-mono">
+                Fuente histórica:{' '}
+                <a
+                  href={activeDialog.museumExhibit.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-cyan-300 underline underline-offset-2 hover:text-cyan-100"
+                >
+                  {activeDialog.museumExhibit.sourceLabel}
+                </a>
+              </p>
+            )}
 
             {activeDialog.hint && (
               <p className="pt-2 border-t border-white/20 text-[11px] text-amber-200 font-mono">
@@ -3581,6 +3881,15 @@ export function Origin70sIsland({
             )}
 
             <div className="flex flex-wrap justify-end pt-2 items-center gap-2">
+              {activeDialog.disabledAction && (
+                <button
+                  type="button"
+                  disabled
+                  className="border-2 border-amber-300/50 bg-slate-800 px-4 py-1.5 font-mono font-bold text-xs uppercase tracking-wider text-amber-200/70 cursor-not-allowed opacity-80"
+                >
+                  {activeDialog.disabledAction}
+                </button>
+              )}
               {activeDialog.primaryAction && (
                 <button
                   type="button"
@@ -3712,7 +4021,7 @@ export function Origin70sIsland({
       )}
 
       {/* Inventario Flotante y Estadísticas [I] */}
-      {inventoryOpen && (
+      {(inventoryOpen || inventoryClosing) && (
         <RpgInventoryModal
           progressState={progressState}
           allUnlocked={allUnlocked}
@@ -3761,7 +4070,8 @@ export function Origin70sIsland({
             onToggleAudio,
             onOpenLevelSelector,
           }}
-          onClose={() => setInventoryOpen(false)}
+          closing={inventoryClosing}
+          onClose={closeInventory}
           onUseScanner={handleUseScannerPulse}
           onToggleLantern={handleToggleLanternAction}
           onUseWelder={handleUseWelderAction}

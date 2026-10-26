@@ -13,7 +13,6 @@ import {
   Circle,
   Compass,
   Flame,
-  KeyRound,
   Radio,
   ScrollText,
   Sparkles,
@@ -113,6 +112,7 @@ export function RpgInventoryModal({
   areaInfo,
   statsSummary,
   quickControls,
+  closing = false,
   onClose,
   onUseScanner,
   onToggleLantern,
@@ -124,6 +124,7 @@ export function RpgInventoryModal({
   areaInfo?: RpgInventoryAreaInfo;
   statsSummary?: RpgInventoryStatsSummary;
   quickControls?: RpgInventoryQuickControls;
+  closing?: boolean;
   onClose: () => void;
   onUseScanner: () => void;
   onToggleLantern: () => void;
@@ -147,17 +148,39 @@ export function RpgInventoryModal({
   const equippedCosmetic = progressState.rpg.equippedCosmetic;
   const lanternOn = progressState.rpg.lanternActive;
 
-  const renderCategoryIcon = (cat: RpgItemSpec['category']) => {
-    switch (cat) {
-      case 'herramienta':
-        return <Wrench className="w-4 h-4 shrink-0" />;
-      case 'llave':
-        return <KeyRound className="w-4 h-4 shrink-0" />;
-      case 'cosmetico':
-        return <Sparkles className="w-4 h-4 shrink-0" />;
-      default:
-        return <Backpack className="w-4 h-4 shrink-0" />;
-    }
+  const renderItemSprite = (item: RpgItemSpec) => {
+    const frame = item.accentHex;
+    const tool = item.usableAction === 'welder' || item.category === 'herramienta';
+    const keyItem = item.category === 'llave';
+    const memory = item.category === 'cinta-memoria' || item.category === 'reliquia';
+    const glow = item.usableAction === 'lantern' || item.category === 'cosmetico';
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges" className="h-8 w-8 shrink-0 pixel-item-sprite">
+        <path d="M4 2h16v2h2v16h-2v2H4v-2H2V4h2z" fill="#070b14" />
+        <path d="M5 4h14v2h2v12h-2v2H5v-2H3V6h2z" fill="#14243a" />
+        <path d="M6 6h12v1H6z" fill={frame} opacity=".8" />
+        {tool && <>
+          <path d="M6 8h5v2h2v2h2v2h2v2h-3v-2h-2v-2h-2v-2H6z" fill="#d8be88" />
+          <path d="M7 8h3v2H7zM14 14h3v3h-3z" fill={frame} />
+        </>}
+        {keyItem && <>
+          <path d="M7 7h7v2h2v2h-2v2h-2v-2H9v2h2v2H9v2H6v-3h2v-2H6V9h1z" fill="#f6d36b" />
+          <path d="M9 9h3v2H9z" fill={frame} />
+        </>}
+        {memory && <>
+          <path d="M7 7h10v2h2v8h-2v2H7v-2H5V9h2z" fill="#cbd5e1" />
+          <path d="M8 9h8v1H8zM8 12h6v1H8zM8 15h8v2H8z" fill={frame} />
+          <path d="M16 11h2v2h-2z" fill="#fef08a" />
+        </>}
+        {!tool && !keyItem && !memory && <>
+          <path d="M9 6h6v2h2v9h-2v2H9v-2H7V8h2z" fill="#d8be88" />
+          <path d="M10 8h4v2h2v5h-2v2h-4v-2H8v-5h2z" fill={frame} />
+          {glow && <path d="M11 10h2v4h-2zM9 11h2v2H9zM14 11h2v2h-2z" fill="#fff4b8" />}
+          {!glow && <path d="M10 11h4v3h-4z" fill="#07111e" />}
+        </>}
+        <path d="M4 20h3v1H4zM18 4h2v1h-2z" fill="#fff4b8" />
+      </svg>
+    );
   };
 
   const handleActionClick = (item: RpgItemSpec) => {
@@ -203,22 +226,23 @@ export function RpgInventoryModal({
       role="dialog"
       aria-modal="true"
       aria-label="Inventario y Estadísticas de Pixel"
+      data-state={closing ? 'closing' : 'open'}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           retroAudio.uiClick();
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      className={`fixed inset-0 z-50 bg-[#020611]/55 flex items-center justify-center p-2 sm:p-4 overflow-y-auto inventory-backdrop ${closing ? 'inventory-backdrop-out' : ''}`}
     >
-      <div className="gbc-retro-box max-w-3xl w-full p-5 sm:p-6 space-y-4 my-auto">
-        <div className="flex items-start justify-between gap-3 border-b-2 border-dashed border-white/25 pb-3">
+      <div className={`gbc-retro-box inventory-panel max-w-2xl w-full max-h-[88vh] overflow-y-auto p-3 sm:p-4 space-y-2.5 my-auto ${closing ? 'inventory-panel-out' : ''}`}>
+        <div className="flex items-center justify-between gap-2 border-b-2 border-dashed border-white/25 pb-2">
           <div>
             <div className="flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#f2c94c] uppercase">
               <Backpack className="w-4 h-4 shrink-0" />
-              <span>MOCHILA DEL ARQUITECTO · INVENTARIO Y ESTADÍSTICAS [I]</span>
+              <span>MOCHILA DEL ARQUITECTO · INVENTARIO [ENTER]</span>
             </div>
-            <h2 className="font-mono text-lg sm:text-xl font-bold text-white mt-0.5">
+            <h2 className="font-mono text-base sm:text-lg font-bold text-white mt-0.5">
               Inventario ({ownedItems.length} / {Object.keys(RPG_ITEMS).length})
             </h2>
           </div>
@@ -229,7 +253,7 @@ export function RpgInventoryModal({
               onClose();
             }}
             aria-label="Cerrar Inventario"
-            className="text-white hover:text-amber-300 cursor-pointer font-mono font-bold px-2 py-1"
+            className="gbc-menu-btn text-white hover:text-amber-300 cursor-pointer font-mono font-bold px-2 py-1"
           >
             [X]
           </button>
@@ -237,7 +261,7 @@ export function RpgInventoryModal({
 
         {/* Resumen de Ubicación Actual y Estadísticas de Partida */}
         {(areaInfo || statsSummary) && (
-          <div className="border-2 border-white/20 bg-[#050918] p-3.5 space-y-3 font-mono">
+          <div className="border-2 border-white/20 bg-[#050918]/95 p-2 space-y-2 font-mono">
             {areaInfo && (
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 border-b border-white/15 pb-2.5">
                 <div className="min-w-0">
@@ -261,32 +285,32 @@ export function RpgInventoryModal({
             )}
 
             {statsSummary && (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                <div className="border border-white/15 bg-black/45 px-2 py-1.5">
+              <div className="grid grid-cols-5 gap-1 text-center">
+                <div className="border border-white/15 bg-black/45 px-1 py-1">
                   <span className="block text-[9px] text-slate-400 uppercase">Diamantes</span>
                   <span className="text-xs font-bold text-[#7dd3fc] font-mono-tabular">
                     {statsSummary.diamondsCollected}/{statsSummary.diamondsTotal}
                   </span>
                 </div>
-                <div className="border border-white/15 bg-black/45 px-2 py-1.5">
+                <div className="border border-white/15 bg-black/45 px-1 py-1">
                   <span className="block text-[9px] text-slate-400 uppercase">Arcades</span>
                   <span className="text-xs font-bold text-[#fde047] font-mono-tabular">
                     {statsSummary.arcadesRestored}/{statsSummary.arcadesTotal}
                   </span>
                 </div>
-                <div className="border border-white/15 bg-black/45 px-2 py-1.5">
+                <div className="border border-white/15 bg-black/45 px-1 py-1">
                   <span className="block text-[9px] text-slate-400 uppercase">Cofres</span>
                   <span className="text-xs font-bold text-amber-300 font-mono-tabular">
                     {statsSummary.chestsOpened}/{statsSummary.chestsTotal}
                   </span>
                 </div>
-                <div className="border border-white/15 bg-black/45 px-2 py-1.5">
+                <div className="border border-white/15 bg-black/45 px-1 py-1">
                   <span className="block text-[9px] text-slate-400 uppercase">Misiones</span>
                   <span className="text-xs font-bold text-[#86efac] font-mono-tabular">
                     {statsSummary.questsCompleted}/{statsSummary.questsTotal}
                   </span>
                 </div>
-                <div className="border border-white/15 bg-black/45 px-2 py-1.5 col-span-2 sm:col-span-1">
+                <div className="border border-white/15 bg-black/45 px-1 py-1">
                   <span className="block text-[9px] text-slate-400 uppercase">Secretos</span>
                   <span className="text-xs font-bold text-purple-300 font-mono-tabular">
                     {statsSummary.secretsFound}
@@ -335,7 +359,7 @@ export function RpgInventoryModal({
                     }}
                     className="gbc-menu-btn px-2.5 py-1 text-[10px] font-bold text-[#fde047] hover:text-white cursor-pointer"
                   >
-                    {quickControls.minimapOpen ? 'Ocultar Mapa [Tab]' : 'Ver Mapa [Tab]'}
+                    {quickControls.minimapOpen ? 'Ocultar Mapa [M / Tab]' : 'Ver Mapa [M / Tab]'}
                   </button>
                 )}
                 {quickControls.onToggleGbGreenMode && (
@@ -356,7 +380,7 @@ export function RpgInventoryModal({
                     onClick={quickControls.onToggleAudio}
                     className="gbc-menu-btn px-2.5 py-1 text-[10px] font-bold text-slate-200 hover:text-white cursor-pointer"
                   >
-                    {quickControls.isAudioMuted ? 'Audio: OFF [M]' : 'Audio: ON [M]'}
+                    {quickControls.isAudioMuted ? 'Audio: OFF' : 'Audio: ON'}
                   </button>
                 )}
                 {allUnlocked && quickControls.onOpenLevelSelector && (
@@ -377,9 +401,9 @@ export function RpgInventoryModal({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
           {/* Lista de objetos obtenidos */}
-          <div className="md:col-span-6 space-y-1.5 max-h-64 overflow-y-auto pr-1">
+          <div className="md:col-span-7 grid grid-cols-3 sm:grid-cols-4 gap-1 max-h-44 overflow-y-auto pr-1 inventory-slots">
             {ownedItems.map((item) => {
               const isSelected = selectedItem?.id === item.id;
               const isEquipped = equippedCosmetic === item.id;
@@ -394,24 +418,21 @@ export function RpgInventoryModal({
                     setSelectedId(item.id);
                     setInspectNotice(null);
                   }}
-                  className={`w-full text-left px-3 py-2 border-2 font-mono text-xs flex items-center justify-between gap-2 cursor-pointer transition-colors ${
+                  title={`${item.name} · ${item.description}`}
+                  className={`inventory-slot w-full min-h-[4.4rem] text-left px-1.5 py-1 border-2 font-mono text-[9px] flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors ${
                     isSelected
-                      ? 'border-[#00f3ff] bg-cyan-950/70 text-white'
+                      ? 'inventory-slot-active border-[#00f3ff] bg-cyan-950/80 text-white'
                       : 'border-white/20 bg-black/50 text-slate-200 hover:border-white/50'
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span style={{ color: item.accentHex }}>
-                      {renderCategoryIcon(item.category)}
-                    </span>
-                    <span className="truncate font-bold">{item.name}</span>
-                  </div>
-                  <span className="text-[10px] shrink-0 text-amber-300">
-                    {isEquipped
-                      ? '[EQUIPADO]'
-                      : isLanternActive
-                      ? '[ACTIVA]'
-                      : item.shortCode}
+                  <span className="relative">
+                    {renderItemSprite(item)}
+                    {isEquipped && <span className="absolute -right-1 -top-1 h-2 w-2 border border-[#07111e] bg-[#fde047]" />}
+                    {isLanternActive && <span className="absolute -right-1 -top-1 h-2 w-2 border border-[#07111e] bg-[#39ff9d]" />}
+                  </span>
+                  <span className="w-full truncate text-center font-bold leading-tight">{item.name}</span>
+                  <span className="text-[8px] text-amber-300 leading-none">
+                    {isEquipped ? 'EQUIPADO' : isLanternActive ? 'ACTIVA' : item.shortCode}
                   </span>
                 </button>
               );
@@ -419,7 +440,7 @@ export function RpgInventoryModal({
           </div>
 
           {/* Inspector y botón de uso real */}
-          <div className="md:col-span-6 border-2 border-white/25 bg-[#060a18] p-4 flex flex-col justify-between space-y-4">
+          <div className="md:col-span-5 border-2 border-white/25 bg-[#060a18] p-2.5 flex flex-col justify-between space-y-2 inventory-inspector">
             {selectedItem && (
               <>
                 <div className="space-y-2">
@@ -434,13 +455,16 @@ export function RpgInventoryModal({
                       CÓD: {selectedItem.shortCode}
                     </span>
                   </div>
-                  <h3 className="font-mono text-base font-bold text-white">
-                    {selectedItem.name}
-                  </h3>
-                  <p className="text-xs font-mono text-slate-200 leading-relaxed">
+                  <div className="flex items-center gap-2">
+                    {renderItemSprite(selectedItem)}
+                    <h3 className="font-mono text-sm font-bold text-white">
+                      {selectedItem.name}
+                    </h3>
+                  </div>
+                  <p className="text-[11px] font-mono text-slate-200 leading-snug">
                     {selectedItem.description}
                   </p>
-                  <p className="text-[11px] font-mono text-amber-200/90 pt-1 border-t border-white/15">
+                  <p className="text-[10px] font-mono text-amber-200/90 pt-1 border-t border-white/15 leading-snug">
                     Uso: {selectedItem.usageHint}
                   </p>
                 </div>
@@ -503,10 +527,10 @@ export function RpgInventoryModal({
         </div>
 
         {/* Habilidades de exploración desbloqueadas */}
-        <div className="pt-3 border-t-2 border-dashed border-white/20 space-y-2">
-          <p className="text-[11px] font-mono tracking-wider text-[#00f3ff] uppercase font-bold">
+        <details className="border-t border-dashed border-white/20 pt-1.5">
+          <summary className="cursor-pointer text-[10px] font-mono tracking-wider text-[#00f3ff] uppercase font-bold">
             Habilidades de Exploración Activas
-          </p>
+          </summary>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {EXPLORATION_ABILITY_BADGES.map((ab) => {
               const unlocked =
@@ -534,13 +558,13 @@ export function RpgInventoryModal({
               );
             })}
           </div>
-        </div>
+        </details>
 
         {/* Logros Especiales Permanentes registrados en la partida */}
-        <div className="pt-3 border-t-2 border-dashed border-white/20 space-y-2">
-          <p className="text-[11px] font-mono tracking-wider text-[#fde047] uppercase font-bold">
+        <details className="border-t border-dashed border-white/20 pt-1.5">
+          <summary className="cursor-pointer text-[10px] font-mono tracking-wider text-[#fde047] uppercase font-bold">
             Logros Permanentes del Cartucho
-          </p>
+          </summary>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
             {[
               {
@@ -609,11 +633,11 @@ export function RpgInventoryModal({
               </div>
             ))}
           </div>
-        </div>
+        </details>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/15 font-mono text-xs">
           <span className="text-slate-300">
-            Pulsa [I] de nuevo para ocultar · [L] Lámpara · [R] Escáner
+            [ENTER] cerrar · [L] Lámpara · [R] Escáner
           </span>
           <button
             type="button"
@@ -623,7 +647,7 @@ export function RpgInventoryModal({
             }}
             className="bg-[#dc2626] hover:bg-[#ef4444] text-white border-2 border-white px-4 py-1.5 font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#000000]"
           >
-            OCULTAR [I / ESC]
+            CERRAR [ENTER / ESC]
           </button>
         </div>
       </div>

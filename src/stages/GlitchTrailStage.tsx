@@ -29,7 +29,7 @@ export interface GlitchTrailStageProps {
   shirtColor: string;
   collectedDiamondIds: string[];
   alreadyRestoredBefore: boolean;
-  initialCheckpointId?: string;
+  discoveredEchoIds: string[];
   onCheckpointReached?: (checkpointId: string) => void;
   onCollectDiamond: (diamondId: string) => void;
   onDiscoverEcho: (echoId: string) => void;
@@ -52,6 +52,38 @@ interface TrailPlatform {
   moveAmpY?: number;
   moveSpeed?: number;
   surfaceTint?: 'emerald' | 'cyan' | 'amber' | 'crystal';
+  reality?: 'stable' | 'glitch';
+}
+
+type TrailReality = 'stable' | 'glitch';
+type TrailEnemyKind = 'sentinel' | 'drone' | 'guardian';
+
+interface TrailEnemySpec {
+  id: string;
+  kind: TrailEnemyKind;
+  x: number;
+  y: number;
+  range: number;
+  hp: number;
+  fireRate?: number;
+}
+
+interface TrailEnemyState extends TrailEnemySpec {
+  originX: number;
+  originY: number;
+  health: number;
+  alive: boolean;
+  fireTimer: number;
+  hitFlash: number;
+}
+
+interface TrailProjectile {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  hostile?: boolean;
 }
 
 interface PixelCurrentZone {
@@ -137,6 +169,7 @@ interface GlitchWisp {
   ry: number;
   speed: number;
   phase: number;
+  reality?: TrailReality;
 }
 
 const LEVEL_W = 4760;
@@ -163,8 +196,9 @@ const PLATFORMS: TrailPlatform[] = [
     syncOffset: 0,
     stabilizerGroup: 'grp-1',
     surfaceTint: 'cyan',
+    reality: 'stable',
   },
-  { id: 'p-mid-1', x: 695, y: 665, w: 185, h: 32, kind: 'solid', surfaceTint: 'emerald' },
+  { id: 'p-mid-1', x: 695, y: 665, w: 185, h: 32, kind: 'solid', surfaceTint: 'emerald', reality: 'stable' },
   {
     id: 'p-sync-2',
     x: 935,
@@ -176,8 +210,9 @@ const PLATFORMS: TrailPlatform[] = [
     syncOffset: 2.2,
     stabilizerGroup: 'grp-1',
     surfaceTint: 'cyan',
+    reality: 'glitch',
   },
-  { id: 'p-high-1', x: 680, y: 485, w: 170, h: 22, kind: 'solid', surfaceTint: 'amber' },
+  { id: 'p-high-1', x: 680, y: 485, w: 170, h: 22, kind: 'solid', surfaceTint: 'amber', reality: 'glitch' },
 
   // ACTO II: El Cañón de las Corrientes (1160 .. 2300)
   { id: 'p-cp2', x: 1155, y: 715, w: 280, h: 46, kind: 'solid', surfaceTint: 'emerald' },
@@ -192,6 +227,7 @@ const PLATFORMS: TrailPlatform[] = [
     moveAmpY: 0,
     moveSpeed: 1.5,
     surfaceTint: 'cyan',
+    reality: 'stable',
   },
   { id: 'p-sky-2', x: 1740, y: 410, w: 240, h: 24, kind: 'solid', surfaceTint: 'amber' },
   { id: 'p-mid-2', x: 1960, y: 640, w: 250, h: 34, kind: 'solid', surfaceTint: 'emerald' },
@@ -211,6 +247,7 @@ const PLATFORMS: TrailPlatform[] = [
     syncOffset: 0.6,
     stabilizerGroup: 'grp-2',
     surfaceTint: 'cyan',
+    reality: 'glitch',
   },
   { id: 'p-shard-top', x: 2820, y: 485, w: 210, h: 26, kind: 'solid', surfaceTint: 'amber' },
   {
@@ -224,6 +261,7 @@ const PLATFORMS: TrailPlatform[] = [
     moveAmpY: 65,
     moveSpeed: 1.7,
     surfaceTint: 'cyan',
+    reality: 'stable',
   },
   {
     id: 'p-bridge-mid',
@@ -248,6 +286,7 @@ const PLATFORMS: TrailPlatform[] = [
     syncOffset: 0,
     stabilizerGroup: 'grp-3',
     surfaceTint: 'cyan',
+    reality: 'glitch',
   },
   { id: 'p-res-1', x: 3960, y: 550, w: 185, h: 28, kind: 'solid', surfaceTint: 'emerald' },
   {
@@ -261,6 +300,7 @@ const PLATFORMS: TrailPlatform[] = [
     moveAmpY: 0,
     moveSpeed: 1.6,
     surfaceTint: 'amber',
+    reality: 'stable',
   },
   { id: 'p-res-2', x: 3500, y: 340, w: 195, h: 28, kind: 'solid', surfaceTint: 'amber' },
   {
@@ -274,6 +314,7 @@ const PLATFORMS: TrailPlatform[] = [
     syncOffset: 2.0,
     stabilizerGroup: 'grp-3',
     surfaceTint: 'cyan',
+    reality: 'glitch',
   },
   { id: 'p-res-3', x: 4185, y: 475, w: 190, h: 28, kind: 'solid', surfaceTint: 'emerald' },
   { id: 'p-arena-low', x: 3920, y: 785, w: 330, h: 32, kind: 'solid', surfaceTint: 'crystal' },
@@ -441,6 +482,15 @@ const TRAIL_ECHOES: TrailEchoNode[] = [
     message:
       'Las grietas violetas y cian de este cañón resuenan con El Cronoscopio de Las Ruinas del Primer Pulso. Cuando restaures este puente y defiendas 1978, la Máquina del Tiempo podrá abrir el salto hacia los años 80.',
   },
+  {
+    id: 'echo-double-jump-core',
+    year: 1978,
+    title: 'Núcleo de Impulso · Salto Doble',
+    x: 1845,
+    y: 372,
+    accentHex: '#facc15',
+    message: 'Un núcleo recuperado enseña a PIXEL a impulsarse una segunda vez en el aire. La mejora queda registrada en el Códice y abre rutas de altura en futuras incursiones.',
+  },
 ];
 
 const TRAIL_NPCS: TrailNpcNode[] = [
@@ -453,7 +503,7 @@ const TRAIL_NPCS: TrailNpcNode[] = [
     isCartographer: true,
     accentHex: '#c084fc',
     speech:
-      '«¡Bienvenido a mi Sendero, pequeño Pixel! Antes de cruzar hacia 1978, demuestra tu ritmo: observa el pulso ámbar de mis plataformas, usa Shift para tu Impulso de Fase y reúne mis llaves.»',
+      '«Bienvenido a La Máquina que Sueña, Pixel. Pulsa Q o X para alternar entre Estado Estable y Glitch. Cada cambio libera un Pulso de Reconstrucción que revela por un instante las rutas de la otra memoria. Shift conserva tu Impulso de Fase.»',
   },
   {
     id: 'npc-chispa76',
@@ -498,11 +548,125 @@ const FINAL_RESONATORS: FinalResonatorNode[] = [
   { id: 'res-astral', label: 'Resonador Astral', x: 4280, y: 475, color: '#39ff14' },
 ];
 
+const TRAIL_ENEMIES: TrailEnemySpec[] = [
+  { id: 'sentinel-umbral', kind: 'sentinel', x: 760, y: 631, range: 64, hp: 2 },
+  { id: 'drone-corriente', kind: 'drone', x: 1880, y: 354, range: 58, hp: 2, fireRate: 2.6 },
+  { id: 'guardian-fundicion', kind: 'guardian', x: 3130, y: 510, range: 72, hp: 4 },
+];
+
+const EXTRA_LIFE_PICKUP = { x: 3438, y: 674, id: 'life-core-checkpoint' };
+
 const GLITCH_WISPS: GlitchWisp[] = [
-  { cx: 2085, cy: 595, rx: 65, ry: 22, speed: 2.1, phase: 0 },
-  { cx: 3890, cy: 495, rx: 72, ry: 32, speed: 1.9, phase: 1.4 },
+  { cx: 2085, cy: 595, rx: 65, ry: 22, speed: 2.1, phase: 0, reality: 'stable' },
+  { cx: 3890, cy: 495, rx: 72, ry: 32, speed: 1.9, phase: 1.4, reality: 'glitch' },
   { cx: 4095, cy: 420, rx: 58, ry: 26, speed: 2.2, phase: 2.8 },
 ];
+
+type GrovePalette = { outline: string; deep: string; shade: string; leaf: string; sun: string; glint: string; bark: string; barkLight: string };
+
+function drawPixelGroveTree(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  groundY: number,
+  scale: number,
+  seed: number,
+  palette: GrovePalette
+) {
+  const px = Math.max(1, Math.round(scale));
+  const trunkW = 12 * px;
+  const trunkH = 45 * px;
+  const crownW = (50 + (seed % 3) * 8) * px;
+  const crownH = (52 + (seed % 2) * 10) * px;
+  const crownY = groundY - trunkH - crownH + 8 * px;
+
+  // Raíces y tronco en escalones de corteza, con caras de luz y sombra.
+  ctx.fillStyle = palette.outline;
+  ctx.fillRect(cx - trunkW / 2 - 2 * px, groundY - 10 * px, trunkW + 4 * px, 12 * px);
+  ctx.fillRect(cx - 4 * px, groundY - trunkH, 8 * px, trunkH);
+  ctx.fillRect(cx - 9 * px, groundY - 4 * px, 8 * px, 5 * px);
+  ctx.fillRect(cx + 4 * px, groundY - 3 * px, 8 * px, 4 * px);
+  ctx.fillStyle = palette.bark;
+  ctx.fillRect(cx - 3 * px, groundY - trunkH, 6 * px, trunkH - 2 * px);
+  ctx.fillRect(cx - 7 * px, groundY - 7 * px, 5 * px, 4 * px);
+  ctx.fillRect(cx + 3 * px, groundY - 6 * px, 6 * px, 3 * px);
+  ctx.fillStyle = palette.barkLight;
+  ctx.fillRect(cx - 2 * px, groundY - trunkH + 3 * px, 2 * px, trunkH - 9 * px);
+  ctx.fillRect(cx - 5 * px, groundY - 22 * px, 3 * px, 2 * px);
+  ctx.fillStyle = palette.deep;
+  ctx.fillRect(cx + 2 * px, groundY - 31 * px, 2 * px, 14 * px);
+
+  // Copa escalonada en lóbulos cosidos entre sí, no una silueta oval plana.
+  const lobes = [
+    { x: -0.43, y: 0.50, w: 0.62, h: 0.50 },
+    { x: 0.34, y: 0.54, w: 0.61, h: 0.48 },
+    { x: -0.28, y: 0.22, w: 0.58, h: 0.49 },
+    { x: 0.22, y: 0.25, w: 0.58, h: 0.48 },
+    { x: 0, y: 0.02, w: 0.57, h: 0.46 },
+  ];
+  for (let li = 0; li < lobes.length; li++) {
+    const lobe = lobes[li];
+    const centerX = cx + lobe.x * crownW;
+    const centerY = crownY + lobe.y * crownH;
+    const halfW = lobe.w * crownW * 0.5;
+    const halfH = lobe.h * crownH * 0.5;
+    const rows = 9;
+    for (let row = 0; row < rows; row++) {
+      const ratio = row / (rows - 1);
+      const shoulder = Math.min(ratio, 1 - ratio) * 2;
+      const rowW = halfW * (0.48 + shoulder * 0.52);
+      const y = Math.round(centerY - halfH + ratio * (2 * halfH));
+      const h = Math.max(px * 2, Math.round((2 * halfH) / rows));
+      ctx.fillStyle = palette.outline;
+      ctx.fillRect(Math.round(centerX - rowW - px), y, Math.round(rowW * 2 + px * 2), h);
+      ctx.fillStyle = ratio > 0.58 ? palette.deep : palette.shade;
+      ctx.fillRect(Math.round(centerX - rowW), y + px, Math.round(rowW * 2), Math.max(px, h - px));
+      const lightW = Math.round(rowW * (li === 4 ? 1.48 : 1.24));
+      ctx.fillStyle = ratio < 0.43 ? palette.leaf : palette.shade;
+      ctx.fillRect(Math.round(centerX - rowW + px), y + px, Math.max(px, lightW), Math.max(px, h - px * 2));
+      if (ratio < 0.28 && row % 2 === 0) {
+        ctx.fillStyle = palette.sun;
+        ctx.fillRect(Math.round(centerX - rowW + px * 2), y + px, Math.round(rowW * 0.46), px);
+      }
+    }
+    // Racimos visibles sobre el volumen de cada lóbulo.
+    for (let fleck = 0; fleck < 5; fleck++) {
+      const fx = Math.round(centerX + (((seed + li * 13 + fleck * 17) % 19) - 9) * px);
+      const fy = Math.round(centerY + (((seed * 3 + li * 7 + fleck * 11) % 13) - 8) * px);
+      ctx.fillStyle = fleck % 3 === 0 ? palette.glint : palette.sun;
+      ctx.fillRect(fx, fy, 2 * px, px);
+      ctx.fillStyle = palette.deep;
+      ctx.fillRect(fx + 3 * px, fy + px, px, px);
+    }
+  }
+}
+
+function drawDigitalWaterfall(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  top: number,
+  height: number,
+  width: number,
+  elapsed: number,
+  color: string
+) {
+  ctx.save();
+  ctx.globalAlpha = 0.42;
+  ctx.fillStyle = '#101a31';
+  ctx.fillRect(x - 5, top, width + 10, 7);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, top + 6, width, height);
+  ctx.fillStyle = 'rgba(4, 10, 27, 0.44)';
+  ctx.fillRect(x + Math.floor(width * 0.58), top + 6, Math.ceil(width * 0.42), height);
+  for (let strand = 0; strand < 5; strand++) {
+    const sx = x + 4 + strand * Math.max(4, Math.floor((width - 8) / 5));
+    for (let drop = 0; drop < 6; drop++) {
+      const sy = top + 9 + ((drop * 31 + strand * 17 + Math.floor(elapsed * (9 + strand))) % Math.max(12, height - 10));
+      ctx.fillStyle = drop % 3 === 0 ? '#fff4b8' : color;
+      ctx.fillRect(sx, sy, strand % 2 ? 2 : 3, 5 + (drop % 2) * 3);
+    }
+  }
+  ctx.restore();
+}
 
 export function GlitchTrailStage({
   skinColor,
@@ -510,7 +674,7 @@ export function GlitchTrailStage({
   shirtColor,
   collectedDiamondIds,
   alreadyRestoredBefore,
-  initialCheckpointId,
+  discoveredEchoIds,
   onCheckpointReached,
   onCollectDiamond,
   onDiscoverEcho,
@@ -520,16 +684,22 @@ export function GlitchTrailStage({
 }: GlitchTrailStageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const resolvedStartCp =
-    CHECKPOINTS.find((cp) => cp.id === initialCheckpointId) || CHECKPOINTS[0];
+  // Cada entrada es una nueva tentativa desde el umbral; los checkpoints rigen esta sesión.
+  const resolvedStartCp = CHECKPOINTS[0];
 
-  const [shardsCount, setShardsCount] = useState<number>(
-    resolvedStartCp.id === 'cp-4' ? 3 : 0
-  );
-  const [prismsCount, setPrismsCount] = useState<number>(
-    resolvedStartCp.id === 'cp-4' ? 2 : 0
-  );
+  const [shardsCount, setShardsCount] = useState<number>(0);
+  const [prismsCount, setPrismsCount] = useState<number>(0);
   const [resonatorsCount, setResonatorsCount] = useState<number>(0);
+  const [realityMode, setRealityMode] = useState<TrailReality>('stable');
+  const [healthPoints, setHealthPoints] = useState<number>(3);
+  const [livesCount, setLivesCount] = useState<number>(3);
+  const [bossHealthDisplay, setBossHealthDisplay] = useState<number>(0);
+  const [bossActiveDisplay, setBossActiveDisplay] = useState<boolean>(false);
+  const [doubleJumpAvailable, setDoubleJumpAvailable] = useState<boolean>(
+    discoveredEchoIds.includes('echo-double-jump-core')
+  );
+  const discoveredEchoIdsRef = useRef(discoveredEchoIds);
+  discoveredEchoIdsRef.current = discoveredEchoIds;
   const [activeCheckpointName, setActiveCheckpointName] = useState<string>(
     resolvedStartCp.name
   );
@@ -566,6 +736,9 @@ export function GlitchTrailStage({
     jumpPressed: false,
     jumpHeld: false,
     dashPressed: false,
+    realityPressed: false,
+    attackPressed: false,
+    shieldPressed: false,
     interactPressed: false,
   });
 
@@ -604,8 +777,7 @@ export function GlitchTrailStage({
     resize();
     window.addEventListener('resize', resize);
 
-    const startCp =
-      CHECKPOINTS.find((cp) => cp.id === initialCheckpointId) || CHECKPOINTS[0];
+    const startCp = CHECKPOINTS[0];
 
     const player = {
       x: startCp.x,
@@ -622,16 +794,39 @@ export function GlitchTrailStage({
       dashCooldown: 0,
       invulnTimer: 0,
       standingPlatformId: '',
+      airJumpUsed: false,
+      doubleJumpUnlocked: discoveredEchoIdsRef.current.includes('echo-double-jump-core'),
     };
 
     let currentCp = startCp;
-    const collectedShards = new Set<string>(
-      startCp.id === 'cp-4' ? BRIDGE_SHARDS.map((s) => s.id) : []
-    );
-    const alignedPrisms = new Set<string>(
-      startCp.id === 'cp-4' ? HARMONIC_PRISMS.map((p) => p.id) : []
-    );
+    let activeReality: TrailReality = 'stable';
+    let reconstructionPulse = 0;
+    let pulseOrigin = { x: player.x + player.w / 2, y: player.y + player.h / 2 };
+    const collectedShards = new Set<string>();
+    const alignedPrisms = new Set<string>();
     const activatedResonators = new Set<string>();
+    const enemies: TrailEnemyState[] = TRAIL_ENEMIES.map((enemy) => ({
+      ...enemy,
+      originX: enemy.x,
+      originY: enemy.y,
+      health: enemy.hp,
+      alive: true,
+      fireTimer: enemy.fireRate ?? 0,
+      hitFlash: 0,
+    }));
+    const playerShots: TrailProjectile[] = [];
+    const hostileShots: TrailProjectile[] = [];
+    let playerHealth = 3;
+    let playerLives = 3;
+    let attackCooldown = 0;
+    let shieldTimer = 0;
+    let shieldCooldown = 0;
+    let bossHealth = 8;
+    let bossAttackTimer = 1.8;
+    let bossHintCooldown = 0;
+    let bossIntroShown = false;
+    let exitHintShown = false;
+    let extraLifeCollected = false;
     const groupStabilizeTimers: Record<string, number> = {
       'grp-1': 0,
       'grp-2': 0,
@@ -667,6 +862,44 @@ export function GlitchTrailStage({
       }
     };
 
+    const hurtPlayer = (sourceX: number) => {
+      if (player.invulnTimer > 0 || shieldTimer > 0) return;
+      playerHealth -= 1;
+      setHealthPoints(playerHealth);
+      player.invulnTimer = 0.95;
+      player.vx = player.x < sourceX ? -250 : 250;
+      player.vy = -260;
+      retroAudio.playerHit();
+      spawnSparks(player.x + player.w / 2, player.y + player.h / 2, '#fb7185', 14);
+      if (playerHealth <= 0) {
+        playerLives -= 1;
+        if (playerLives <= 0) {
+          playerLives = 3;
+          notifyToast('Tres vidas recuperadas en el último checkpoint. Sigue intentando.');
+        } else {
+          notifyToast(`Vida perdida · ${playerLives} restantes. Reapareces en ${currentCp.name}.`);
+        }
+        playerHealth = 3;
+        setLivesCount(playerLives);
+        setHealthPoints(playerHealth);
+        player.x = currentCp.x;
+        player.y = currentCp.y - 36;
+        player.vx = 0;
+        player.vy = 0;
+        player.grounded = false;
+        player.standingPlatformId = '';
+        player.airJumpUsed = false;
+        player.invulnTimer = 1.35;
+      }
+    };
+
+    const fireHostileBolt = (sx: number, sy: number, speed: number) => {
+      const dx = player.x + player.w / 2 - sx;
+      const dy = player.y + player.h / 2 - sy;
+      const length = Math.max(1, Math.hypot(dx, dy));
+      hostileShots.push({ x: sx, y: sy, vx: (dx / length) * speed, vy: (dy / length) * speed, life: 3, hostile: true });
+    };
+
     const camera = {
       x: Math.max(0, Math.min(LEVEL_W - vw, player.x - vw * 0.36)),
       y: Math.max(0, Math.min(LEVEL_H - vh, player.y - vh * 0.58)),
@@ -675,6 +908,9 @@ export function GlitchTrailStage({
     const keys: Record<string, boolean> = {};
     let jumpJustPressed = false;
     let dashJustPressed = false;
+    let realityJustPressed = false;
+    let attackJustPressed = false;
+    let shieldJustPressed = false;
     let interactJustPressed = false;
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -686,6 +922,13 @@ export function GlitchTrailStage({
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyK') {
         dashJustPressed = true;
       }
+      if (e.code === 'KeyQ' || e.code === 'KeyX') {
+        e.preventDefault();
+        e.stopPropagation();
+        realityJustPressed = true;
+      }
+      if (e.code === 'KeyZ' || e.code === 'KeyJ') attackJustPressed = true;
+      if (e.code === 'KeyC') shieldJustPressed = true;
       if (e.code === 'KeyE' || e.code === 'Enter') {
         interactJustPressed = true;
       }
@@ -715,6 +958,15 @@ export function GlitchTrailStage({
       bx <= camera.x + vw + pad &&
       by + bh >= camera.y - pad &&
       by <= camera.y + vh + pad;
+
+    const getWispPosition = (wisp: GlitchWisp, t: number, reality = activeReality) => {
+      const realityActive = !wisp.reality || wisp.reality === reality;
+      return {
+        x: wisp.cx + Math.cos(t * wisp.speed + wisp.phase) * wisp.rx + (realityActive ? 0 : 48),
+        y: wisp.cy + Math.sin(t * wisp.speed + wisp.phase) * wisp.ry + (realityActive ? 0 : -22),
+        realityActive,
+      };
+    };
 
     const computePlatformState = (p: TrailPlatform, t: number) => {
       let rx = p.x;
@@ -750,12 +1002,15 @@ export function GlitchTrailStage({
         solid = activatedResonators.size >= 3;
       }
 
+      const realityActive = !p.reality || p.reality === activeReality;
+      if (!realityActive) solid = false;
+
       const effectiveW =
         p.kind === 'reconstructed-mid'
           ? (p.w * Math.min(5, alignedPrisms.size + collectedShards.size)) / 5
           : p.w;
 
-      return { rx, ry, rw: effectiveW, rh: p.h, solid, telegraphRatio };
+      return { rx, ry, rw: effectiveW, rh: p.h, solid, telegraphRatio, realityActive };
     };
 
     let rafId = 0;
@@ -770,6 +1025,7 @@ export function GlitchTrailStage({
 
       if (!levelCompleted) {
         elapsed += dt;
+        reconstructionPulse = Math.max(0, reconstructionPulse - dt);
 
         if (respawnRequestRef.current) {
           respawnRequestRef.current = false;
@@ -778,6 +1034,7 @@ export function GlitchTrailStage({
           player.y = currentCp.y - 36;
           player.vx = 0;
           player.vy = 0;
+          player.airJumpUsed = false;
           player.invulnTimer = 0.9;
           spawnSparks(player.x + 11, player.y + 18, '#00f3ff', 14);
           notifyToast(`Reubicado en ${currentCp.name}`);
@@ -809,9 +1066,84 @@ export function GlitchTrailStage({
           dashJustPressed = true;
           vCtrl.dashPressed = false;
         }
+        if (vCtrl.realityPressed) {
+          realityJustPressed = true;
+          vCtrl.realityPressed = false;
+        }
+        if (vCtrl.attackPressed) {
+          attackJustPressed = true;
+          vCtrl.attackPressed = false;
+        }
+        if (vCtrl.shieldPressed) {
+          shieldJustPressed = true;
+          vCtrl.shieldPressed = false;
+        }
         if (vCtrl.interactPressed) {
           interactJustPressed = true;
           vCtrl.interactPressed = false;
+        }
+
+        if (realityJustPressed) {
+          realityJustPressed = false;
+          const nextReality: TrailReality = activeReality === 'stable' ? 'glitch' : 'stable';
+          const blockedByGeometry = PLATFORMS.some((p) => {
+            if (p.reality !== activeReality && p.reality !== nextReality) return false;
+            const platform = computePlatformState(p, elapsed);
+            return (
+              player.x + player.w > platform.rx + 2 &&
+              player.x < platform.rx + platform.rw - 2 &&
+              player.y + player.h > platform.ry + 2 &&
+              player.y < platform.ry + platform.rh - 2
+            );
+          });
+          const blockedByHazard = GLITCH_WISPS.some((wisp) => {
+            const nextPosition = getWispPosition(wisp, elapsed, nextReality);
+            return nextPosition.realityActive &&
+              Math.hypot(player.x + player.w / 2 - nextPosition.x, player.y + player.h / 2 - nextPosition.y) < 38;
+          });
+          if (blockedByGeometry || blockedByHazard) {
+            notifyToast(blockedByGeometry
+              ? 'Pulso bloqueado · despeja la estructura antes de cambiar la realidad.'
+              : 'Pulso bloqueado · espera a que pase el remolino antes de cambiar.');
+          } else {
+            activeReality = nextReality;
+            setRealityMode(nextReality);
+            reconstructionPulse = 1.15;
+            pulseOrigin = { x: player.x + player.w / 2, y: player.y + player.h / 2 };
+            retroAudio.dashImpulse();
+            spawnSparks(pulseOrigin.x, pulseOrigin.y, nextReality === 'glitch' ? '#e879f9' : '#facc15', 22);
+            notifyToast(nextReality === 'glitch'
+              ? 'PULSO DE RECONSTRUCCIÓN · la realidad Glitch revela rutas perdidas.'
+              : 'ESTADO ESTABLE · la memoria vuelve a encajar.');
+          }
+        }
+
+        if (attackCooldown > 0) attackCooldown = Math.max(0, attackCooldown - dt);
+        if (shieldCooldown > 0) shieldCooldown = Math.max(0, shieldCooldown - dt);
+        if (shieldTimer > 0) shieldTimer = Math.max(0, shieldTimer - dt);
+        if (bossHintCooldown > 0) bossHintCooldown = Math.max(0, bossHintCooldown - dt);
+        if (attackJustPressed) {
+          attackJustPressed = false;
+          if (attackCooldown <= 0 && playerShots.length < 8) {
+            playerShots.push({
+              x: player.x + (player.facing > 0 ? player.w : -10),
+              y: player.y + 14,
+              vx: player.facing * 620,
+              vy: 0,
+              life: 1.05,
+            });
+            attackCooldown = 0.28;
+            retroAudio.dashImpulse();
+          }
+        }
+        if (shieldJustPressed) {
+          shieldJustPressed = false;
+          if (shieldCooldown <= 0) {
+            shieldTimer = 0.8;
+            shieldCooldown = 4.2;
+            retroAudio.syncTick(true);
+            spawnSparks(player.x + player.w / 2, player.y + player.h / 2, '#67e8f9', 12);
+          }
         }
 
         const moveLeft = Boolean(keys['KeyA'] || keys['ArrowLeft'] || vCtrl.left);
@@ -871,8 +1203,13 @@ export function GlitchTrailStage({
           player.vy = Math.min(760, player.vy + gravity * dt);
         }
 
-        if (player.jumpBufferTimer > 0 && player.coyoteTimer > 0) {
-          player.vy = -565;
+        if (
+          player.jumpBufferTimer > 0 &&
+          (player.coyoteTimer > 0 || (player.doubleJumpUnlocked && !player.airJumpUsed))
+        ) {
+          const groundedJump = player.coyoteTimer > 0;
+          player.vy = groundedJump ? -565 : -515;
+          if (!groundedJump) player.airJumpUsed = true;
           player.grounded = false;
           player.coyoteTimer = 0;
           player.jumpBufferTimer = 0;
@@ -933,8 +1270,37 @@ export function GlitchTrailStage({
             player.vy = 0;
             player.grounded = true;
             player.coyoteTimer = 0.13;
+            player.airJumpUsed = false;
             player.standingPlatformId = ps.p.id;
             break;
+          }
+        }
+
+        // IA de patrulla, drones con aviso de disparo y guardianes de embestida legible.
+        for (const enemy of enemies) {
+          if (!enemy.alive) continue;
+          enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
+          if (enemy.kind === 'sentinel') {
+            enemy.x = enemy.originX + Math.sin(elapsed * 1.7) * enemy.range;
+            enemy.y = enemy.originY + Math.max(0, Math.sin(elapsed * 3.4)) * 3;
+          } else if (enemy.kind === 'drone') {
+            enemy.x = enemy.originX + Math.sin(elapsed * 0.9) * enemy.range;
+            enemy.y = enemy.originY + Math.sin(elapsed * 2.1) * 24;
+            enemy.fireTimer -= dt;
+            if (enemy.fireTimer <= 0 && Math.abs(player.x - enemy.x) < 540) {
+              fireHostileBolt(enemy.x + 5, enemy.y + 20, 205);
+              enemy.fireTimer = enemy.fireRate ?? 2.6;
+            } else if (enemy.fireTimer <= 0) {
+              enemy.fireTimer = 0.42;
+            }
+          } else {
+            const distance = player.x - enemy.originX;
+            const chargeCycle = (elapsed + 0.4) % 3.2;
+            const charge = Math.abs(distance) < 245 && chargeCycle > 0.62 && chargeCycle < 1.15;
+            enemy.x = charge
+              ? enemy.originX + Math.sign(distance) * Math.min(enemy.range + 35, (chargeCycle - 0.62) * 390)
+              : enemy.originX + Math.sin(elapsed * 1.15) * enemy.range * 0.35;
+            enemy.y = enemy.originY + (Math.abs(distance) < 245 && chargeCycle < 0.62 ? -3 : 0);
           }
         }
 
@@ -952,28 +1318,160 @@ export function GlitchTrailStage({
         // Reaparición justa e instantánea si cae al vacío
         if (player.y > LEVEL_H + 60) {
           retroAudio.playerHit();
+          playerLives -= 1;
+          if (playerLives <= 0) playerLives = 3;
+          setLivesCount(playerLives);
+          playerHealth = 3;
+          setHealthPoints(playerHealth);
           player.x = currentCp.x;
           player.y = currentCp.y - 36;
           player.vx = 0;
           player.vy = 0;
           player.invulnTimer = 1.1;
+          player.airJumpUsed = false;
           spawnSparks(player.x + 11, player.y + 18, '#00f3ff', 14);
         }
 
         const pcx = player.x + player.w * 0.5;
         const pcy = player.y + player.h * 0.5;
 
+        for (const enemy of enemies) {
+          if (!enemy.alive) continue;
+          const ew = enemy.kind === 'drone' ? 34 : enemy.kind === 'guardian' ? 38 : 28;
+          const eh = enemy.kind === 'drone' ? 24 : 32;
+          if (
+            player.x + player.w > enemy.x - ew / 2 &&
+            player.x < enemy.x + ew / 2 &&
+            player.y + player.h > enemy.y &&
+            player.y < enemy.y + eh
+          ) {
+            hurtPlayer(enemy.x);
+          }
+        }
+
+        const coreActive = activatedResonators.size >= 3;
+        const bossX = 4340 + Math.sin(elapsed * 0.75) * 32;
+        const bossY = 630 + Math.sin(elapsed * 1.5) * 18;
+        const bossCycle = elapsed % 4.8;
+        const bossVulnerable = bossCycle > 2.5 && bossCycle < 3.6;
+        if (coreActive && !bossIntroShown) {
+          bossIntroShown = true;
+          bossAttackTimer = 1.8;
+          setBossActiveDisplay(true);
+          setBossHealthDisplay(bossHealth);
+          notifyToast('El núcleo abre su ojo durante cada Pulso · ataca en la ventana dorada.');
+        }
+        if (coreActive && bossHealth > 0) {
+          bossAttackTimer -= dt;
+          if (bossAttackTimer <= 0) {
+            fireHostileBolt(bossX - 20, bossY + 15, 245);
+            bossAttackTimer = 1.9;
+          }
+          if (Math.hypot(pcx - bossX, pcy - bossY) < 48) hurtPlayer(bossX);
+        }
+
+        for (let i = playerShots.length - 1; i >= 0; i--) {
+          const shot = playerShots[i];
+          shot.x += shot.vx * dt;
+          shot.y += shot.vy * dt;
+          shot.life -= dt;
+          let consumed = shot.life <= 0 || shot.x < camera.x - 80 || shot.x > camera.x + vw + 80;
+
+          for (const enemy of enemies) {
+            if (!enemy.alive || consumed) continue;
+            const ew = enemy.kind === 'drone' ? 34 : enemy.kind === 'guardian' ? 38 : 28;
+            const eh = enemy.kind === 'drone' ? 24 : 32;
+            if (shot.x + 12 > enemy.x - ew / 2 && shot.x < enemy.x + ew / 2 && shot.y + 8 > enemy.y && shot.y < enemy.y + eh) {
+              consumed = true;
+              const guardianCycle = (elapsed + 0.4) % 3.2;
+              const exposed = enemy.kind !== 'guardian' || (guardianCycle > 0.62 && guardianCycle < 1.15);
+              if (exposed) {
+                enemy.health -= 1;
+                enemy.hitFlash = 0.14;
+                spawnSparks(shot.x, shot.y, enemy.kind === 'guardian' ? '#f472b6' : '#67e8f9', 10);
+                retroAudio.npcBlip(0.75);
+                if (enemy.health <= 0) {
+                  enemy.alive = false;
+                  spawnSparks(enemy.x, enemy.y + 14, '#facc6b', 22);
+                  notifyToast(enemy.kind === 'guardian' ? 'Guardián de Fundición desactivado.' : 'Centinela de la cicatriz desarmado.');
+                }
+              } else {
+                spawnSparks(shot.x, shot.y, '#fda4af', 7);
+              }
+            }
+          }
+
+          for (const stab of STABILIZERS) {
+            if (consumed) break;
+            if (Math.hypot(shot.x - stab.x, shot.y - (stab.y - 16)) < 22) {
+              groupStabilizeTimers[stab.group] = 7.5;
+              consumed = true;
+              retroAudio.bridgeActivate();
+              spawnSparks(stab.x, stab.y - 16, '#fde047', 16);
+              notifyToast(`${stab.label} activado con el Pulso de Energía · plataformas fijadas.`);
+            }
+          }
+
+          if (coreActive && bossHealth > 0 && !consumed && Math.hypot(shot.x - bossX, shot.y - bossY) < 46) {
+            consumed = true;
+            if (bossVulnerable) {
+              bossHealth -= 1;
+              setBossHealthDisplay(bossHealth);
+              retroAudio.shardCollect(3);
+              spawnSparks(bossX, bossY, '#fde047', 18);
+              if (bossHealth <= 0) {
+                spawnSparks(bossX, bossY, '#facc6b', 56);
+                retroAudio.bridgeActivate();
+                notifyToast('Núcleo liberado · La Máquina que Sueña recuerda su origen.');
+              }
+            } else {
+              spawnSparks(shot.x, shot.y, '#94a3b8', 8);
+              if (bossHintCooldown <= 0) {
+                bossHintCooldown = 1.4;
+                notifyToast('El núcleo está sellado · espera a que su ojo se vuelva dorado.');
+              }
+            }
+          }
+          if (consumed) playerShots.splice(i, 1);
+        }
+
+        for (let i = hostileShots.length - 1; i >= 0; i--) {
+          const shot = hostileShots[i];
+          shot.x += shot.vx * dt;
+          shot.y += shot.vy * dt;
+          shot.life -= dt;
+          const hit = shot.x > player.x - 3 && shot.x < player.x + player.w + 3 &&
+            shot.y > player.y - 2 && shot.y < player.y + player.h + 2;
+          if (hit) {
+            if (shieldTimer > 0) {
+              spawnSparks(shot.x, shot.y, '#67e8f9', 9);
+              retroAudio.syncTick(true);
+            } else {
+              hurtPlayer(shot.x);
+            }
+            hostileShots.splice(i, 1);
+          } else if (shot.life <= 0 || shot.x < camera.x - 120 || shot.x > camera.x + vw + 120) {
+            hostileShots.splice(i, 1);
+          }
+        }
+
+        if (!extraLifeCollected && Math.hypot(pcx - EXTRA_LIFE_PICKUP.x, pcy - EXTRA_LIFE_PICKUP.y) < 30) {
+          extraLifeCollected = true;
+          playerLives = Math.min(5, playerLives + 1);
+          setLivesCount(playerLives);
+          retroAudio.shardCollect(2);
+          spawnSparks(EXTRA_LIFE_PICKUP.x, EXTRA_LIFE_PICKUP.y, '#fb7185', 24);
+          notifyToast('Núcleo vital recuperado · +1 vida.');
+        }
+
         if (player.invulnTimer <= 0 && player.dashTimer <= 0) {
           for (const wisp of GLITCH_WISPS) {
-            const wx = wisp.cx + Math.cos(elapsed * wisp.speed + wisp.phase) * wisp.rx;
-            const wy = wisp.cy + Math.sin(elapsed * wisp.speed + wisp.phase) * wisp.ry;
+            const position = getWispPosition(wisp, elapsed);
+            if (!position.realityActive) continue;
+            const wx = position.x;
+            const wy = position.y;
             if (Math.hypot(pcx - wx, pcy - wy) < 22) {
-              retroAudio.playerHit();
-              player.x = currentCp.x;
-              player.y = currentCp.y - 36;
-              player.vx = 0;
-              player.vy = 0;
-              player.invulnTimer = 1.2;
+              hurtPlayer(wx);
               notifyToast('Desfase temporal · Reubicado en el último punto de control.');
               break;
             }
@@ -1123,6 +1621,11 @@ export function GlitchTrailStage({
             if (nearSpeaker.isEcho) {
               retroAudio.echoDiscover();
               callbacksRef.current.onDiscoverEcho(nearSpeaker.id);
+              if (nearSpeaker.id === 'echo-double-jump-core' && !player.doubleJumpUnlocked) {
+                player.doubleJumpUnlocked = true;
+                setDoubleJumpAvailable(true);
+                notifyToast('Salto doble desbloqueado y registrado en el Códice. Pulsa Espacio otra vez en el aire.');
+              }
             } else {
               retroAudio.npcBlip(1.0);
             }
@@ -1138,7 +1641,11 @@ export function GlitchTrailStage({
         }
 
         // Meta Final con guardia de ejecución única
-        if (!victoryDispatched && activatedResonators.size >= 3 && pcx >= 4565 && pcy <= 745) {
+        if (!exitHintShown && activatedResonators.size >= 3 && bossHealth > 0 && pcx >= 4500) {
+          exitHintShown = true;
+          notifyToast('El portal sigue sellado · derrota al Guardián del Núcleo para reconstruir la salida.');
+        }
+        if (!victoryDispatched && activatedResonators.size >= 3 && bossHealth <= 0 && pcx >= 4565 && pcy <= 745) {
           victoryDispatched = true;
           levelCompleted = true;
           retroAudio.portalVictory();
@@ -1174,25 +1681,98 @@ export function GlitchTrailStage({
       // ================================================================
       ctx.imageSmoothingEnabled = false;
       const bg = ctx.createLinearGradient(0, 0, 0, vh);
-      bg.addColorStop(0, '#030716');
-      bg.addColorStop(0.55, '#071a33');
-      bg.addColorStop(1, '#09263a');
+      if (activeReality === 'stable') {
+        bg.addColorStop(0, '#030716');
+        bg.addColorStop(0.55, '#071a33');
+        bg.addColorStop(1, '#09263a');
+      } else {
+        bg.addColorStop(0, '#0b0617');
+        bg.addColorStop(0.55, '#24103c');
+        bg.addColorStop(1, '#341533');
+      }
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, vw, vh);
 
       for (const s of stars) {
         const sx = (((s.nx * vw * 1.4 - camera.x * 0.14) % vw) + vw) % vw;
         const sy = (((s.ny * vh * 1.2 - camera.y * 0.08) % vh) + vh) % vh;
-        ctx.fillStyle = 'rgba(224, 242, 254, 0.65)';
+        ctx.fillStyle = activeReality === 'stable' ? 'rgba(224, 242, 254, 0.65)' : 'rgba(249, 168, 255, 0.78)';
         ctx.fillRect(Math.round(sx), Math.round(sy), s.s, s.s);
       }
 
       const moonX = vw * 0.78 - camera.x * 0.05;
       const moonY = vh * 0.18;
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.88)';
+      ctx.fillStyle = activeReality === 'stable' ? 'rgba(226, 232, 240, 0.88)' : 'rgba(255, 214, 255, 0.82)';
       ctx.beginPath();
       ctx.arc(moonX, moonY, 42, 0, Math.PI * 2);
       ctx.fill();
+
+      // Bosque de Circuitos en tres planos: dosel distante, troncos medios y cascadas de datos.
+      const grovePalette: GrovePalette = activeReality === 'stable'
+        ? { outline: '#101c2a', deep: '#123b39', shade: '#1d6555', leaf: '#2f956a', sun: '#68bd71', glint: '#c3ed9a', bark: '#4e382f', barkLight: '#93704d' }
+        : { outline: '#160e29', deep: '#332052', shade: '#583578', leaf: '#8d4db4', sun: '#c05abb', glint: '#ffd1fb', bark: '#38203e', barkLight: '#87527c' };
+      ctx.save();
+      // Techo vegetal en siluetas escalonadas y haces cálidos que cruzan la cicatriz.
+      ctx.fillStyle = activeReality === 'stable' ? 'rgba(11, 33, 37, 0.92)' : 'rgba(25, 10, 39, 0.94)';
+      ctx.fillRect(0, 0, vw, 46);
+      for (let leaf = 0; leaf < Math.ceil(vw / 54) + 1; leaf++) {
+        const lx = leaf * 54 - ((camera.x * 0.08) % 54);
+        ctx.fillRect(lx, 32 + (leaf % 3) * 6, 38, 20);
+        ctx.fillRect(lx + 9, 20 + (leaf % 2) * 8, 26, 19);
+        ctx.fillRect(lx + 17, 10 + (leaf % 3) * 3, 11, 16);
+        if (leaf % 2 === 0) {
+          ctx.fillStyle = grovePalette.sun;
+          ctx.fillRect(lx + 8, 34, 8, 3);
+          ctx.fillStyle = activeReality === 'stable' ? 'rgba(11, 33, 37, 0.92)' : 'rgba(25, 10, 39, 0.94)';
+        }
+      }
+      // Columnas de luz, dispuestas como facetas para mantener el borde de píxel nítido.
+      for (let beam = 0; beam < 4; beam++) {
+        const bx = Math.round(vw * (0.16 + beam * 0.23) - camera.x * (0.06 + beam * 0.025));
+        ctx.globalAlpha = activeReality === 'stable' ? 0.11 : 0.09;
+        ctx.fillStyle = beam % 2 === 0 ? '#fff2b0' : activeReality === 'glitch' ? '#ec9bff' : '#8ce6d2';
+        ctx.beginPath();
+        ctx.moveTo(bx, 38);
+        ctx.lineTo(bx + 18, 38);
+        ctx.lineTo(bx + 154, vh * 0.76);
+        ctx.lineTo(bx + 91, vh * 0.76);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Arcos de recreativas perdidas emergen entre los árboles lejanos.
+      const farOffset = -((camera.x * 0.18) % 420);
+      for (let ruin = -1; ruin < Math.ceil(vw / 420) + 1; ruin++) {
+        const rx = farOffset + ruin * 420 + 88;
+        const ry = vh * 0.62 + (ruin % 2) * 18;
+        ctx.fillStyle = 'rgba(5, 13, 28, 0.85)';
+        ctx.fillRect(rx, ry - 94, 112, 102);
+        ctx.fillRect(rx - 12, ry - 72, 136, 76);
+        ctx.fillStyle = activeReality === 'stable' ? 'rgba(35, 57, 72, 0.9)' : 'rgba(65, 34, 85, 0.9)';
+        ctx.fillRect(rx + 9, ry - 86, 94, 82);
+        ctx.fillStyle = activeReality === 'stable' ? 'rgba(62, 144, 135, 0.62)' : 'rgba(196, 86, 224, 0.66)';
+        ctx.fillRect(rx + 18, ry - 74, 76, 43);
+        ctx.fillStyle = 'rgba(8, 12, 26, 0.8)';
+        ctx.fillRect(rx + 24, ry - 68, 64, 31);
+        ctx.fillStyle = grovePalette.glint;
+        ctx.fillRect(rx + 34, ry - 60, 16, 3);
+        ctx.fillRect(rx + 62, ry - 50, 21, 2);
+        ctx.fillStyle = '#7d6448';
+        ctx.fillRect(rx + 17, ry - 1, 80, 5);
+      }
+
+      // Arboleda media con variación de escala y siluetas reconocibles.
+      const midOffset = -((camera.x * 0.31) % 300);
+      for (let tree = -1; tree < Math.ceil(vw / 300) + 1; tree++) {
+        const tx = midOffset + tree * 300 + 60 + (tree % 2) * 38;
+        drawPixelGroveTree(ctx, tx, vh * 0.88 - camera.y * 0.045, tree % 3 === 0 ? 2 : 1, tree + 8, grovePalette);
+      }
+      const fallsOffset = -((camera.x * 0.27) % 570);
+      for (let fall = -1; fall < Math.ceil(vw / 570) + 1; fall++) {
+        drawDigitalWaterfall(ctx, fallsOffset + fall * 570 + 344, vh * 0.49 - camera.y * 0.06, vh * 0.36, 26, elapsed, activeReality === 'stable' ? '#31b8b2' : '#cb63dc');
+      }
+      ctx.restore();
 
       // Acantilados lejanos del Cañón en parallax (0.28)
       ctx.save();
@@ -1236,7 +1816,7 @@ export function GlitchTrailStage({
       ctx.translate(-Math.round(camera.x), -Math.round(camera.y));
 
       // Cuadrícula arquitectónica sutil solo en el rango de cámara
-      ctx.strokeStyle = 'rgba(0, 243, 255, 0.055)';
+      ctx.strokeStyle = activeReality === 'stable' ? 'rgba(0, 243, 255, 0.055)' : 'rgba(232, 121, 249, 0.09)';
       ctx.lineWidth = 1;
       const firstGridX = Math.floor(camera.x / 120) * 120;
       for (let gx = firstGridX; gx < camera.x + vw + 120; gx += 120) {
@@ -1244,6 +1824,56 @@ export function GlitchTrailStage({
         ctx.moveTo(gx, camera.y);
         ctx.lineTo(gx, camera.y + vh);
         ctx.stroke();
+      }
+
+      // La Máquina que Sueña: una recreativa imposible suspendida sobre el umbral.
+      if (isBoxInCam(285, 430, 188, 210)) {
+        const machineGlow = activeReality === 'stable' ? '#facc6b' : '#f472ff';
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = 'rgba(3, 7, 18, 0.42)';
+        ctx.fillRect(316, 582, 138, 11);
+        ctx.fillStyle = '#070b18';
+        ctx.fillRect(330, 468, 112, 112);
+        ctx.fillRect(318, 486, 136, 82);
+        ctx.fillRect(342, 452, 88, 12);
+        ctx.fillStyle = activeReality === 'stable' ? '#344254' : '#562c69';
+        ctx.fillRect(334, 472, 104, 100);
+        ctx.fillRect(322, 490, 128, 74);
+        ctx.fillStyle = machineGlow;
+        ctx.fillRect(348, 480, 76, 56);
+        ctx.fillStyle = '#100c1b';
+        ctx.fillRect(354, 486, 64, 44);
+        ctx.fillStyle = activeReality === 'stable' ? '#e8bd65' : '#a637cc';
+        ctx.fillRect(360, 491, 52, 2);
+        ctx.fillRect(360, 523, 52, 2);
+        ctx.fillStyle = '#f8e7b1';
+        ctx.fillRect(370, 500, 4, 4);
+        ctx.fillRect(398, 508, 3, 3);
+        ctx.fillStyle = machineGlow;
+        ctx.fillRect(376, 500, 20, 2);
+        ctx.fillRect(376, 516, 12, 2);
+        ctx.fillStyle = '#070b18';
+        ctx.fillRect(338, 542, 96, 28);
+        ctx.fillStyle = '#9a6b37';
+        ctx.fillRect(346, 547, 80, 4);
+        ctx.fillStyle = machineGlow;
+        ctx.fillRect(354, 555, 8, 5);
+        ctx.fillRect(370, 555, 8, 5);
+        ctx.fillRect(386, 555, 8, 5);
+        ctx.fillStyle = '#d8be88';
+        ctx.fillRect(344, 464, 5, 4);
+        ctx.fillRect(424, 464, 5, 4);
+        ctx.fillRect(310, 506, 4, 12);
+        ctx.fillRect(456, 506, 4, 12);
+        ctx.globalAlpha = 0.46;
+        for (let i = 0; i < 8; i++) {
+          const px = 300 + ((i * 37 + Math.floor(elapsed * 13)) % 170);
+          const py = 444 + ((i * 29 + Math.floor(elapsed * 7)) % 132);
+          ctx.fillStyle = i % 3 === 0 ? '#facc6b' : machineGlow;
+          ctx.fillRect(px, py, i % 2 ? 3 : 5, i % 2 ? 5 : 3);
+        }
+        ctx.restore();
       }
 
       // Checkpoints visibles como balizas de sincronía
@@ -1290,6 +1920,26 @@ export function GlitchTrailStage({
         const st = computePlatformState(p, elapsed);
         if (!isBoxInCam(st.rx, st.ry, p.w, p.h)) continue;
 
+        if (p.reality && !st.realityActive) {
+          if (reconstructionPulse <= 0) continue;
+          ctx.save();
+          ctx.globalAlpha = Math.min(0.48, reconstructionPulse * 0.42);
+          ctx.strokeStyle = p.reality === 'glitch' ? '#f0abfc' : '#a7f3d0';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 6]);
+          ctx.strokeRect(Math.round(st.rx), Math.round(st.ry), Math.round(st.rw), st.rh);
+          ctx.setLineDash([]);
+          ctx.fillStyle = p.reality === 'glitch' ? 'rgba(217, 70, 239, 0.18)' : 'rgba(52, 211, 153, 0.16)';
+          ctx.fillRect(Math.round(st.rx + 2), Math.round(st.ry + 2), Math.max(0, Math.round(st.rw - 4)), Math.max(0, st.rh - 2));
+          for (let bit = 0; bit < 4; bit++) {
+            const bx = Math.round(st.rx + ((bit * 31 + 13) % Math.max(8, st.rw - 4)));
+            ctx.fillStyle = '#fff7cf';
+            ctx.fillRect(bx, Math.round(st.ry - 2 - (bit % 2) * 3), 3, 3);
+          }
+          ctx.restore();
+          continue;
+        }
+
         if (p.kind === 'reconstructed-mid' || p.kind === 'reconstructed-final') {
           ctx.save();
           ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
@@ -1310,7 +1960,7 @@ export function GlitchTrailStage({
 
         if (p.kind === 'sync' && !st.solid) {
           ctx.save();
-          ctx.strokeStyle = 'rgba(0, 243, 255, 0.38)';
+          ctx.strokeStyle = p.reality === 'glitch' ? 'rgba(232, 121, 249, 0.62)' : 'rgba(0, 243, 255, 0.38)';
           ctx.setLineDash([6, 6]);
           ctx.lineWidth = 2;
           ctx.strokeRect(st.rx, st.ry, st.rw, st.rh);
@@ -1322,8 +1972,11 @@ export function GlitchTrailStage({
         }
 
         const isWarning = p.kind === 'sync' && st.telegraphRatio < 0.3;
+        const phaseTint = p.reality === 'glitch' ? '#e879f9' : p.reality === 'stable' ? '#6ee7b7' : null;
         const topColor = isWarning
           ? '#f59e0b'
+          : phaseTint
+          ? phaseTint
           : p.surfaceTint === 'amber'
           ? '#eab308'
           : p.surfaceTint === 'crystal'
@@ -1332,10 +1985,59 @@ export function GlitchTrailStage({
           ? '#00f3ff'
           : '#10b981';
 
-        ctx.fillStyle = p.surfaceTint === 'crystal' ? '#1e1b4b' : '#0f292a';
-        ctx.fillRect(Math.round(st.rx), Math.round(st.ry), Math.round(st.rw), st.rh);
+        const px = Math.round(st.rx);
+        const py = Math.round(st.ry);
+        const pw = Math.round(st.rw);
+        ctx.fillStyle = p.reality === 'glitch' ? '#251235' : p.surfaceTint === 'crystal' ? '#1e1b4b' : '#0f292a';
+        ctx.fillRect(px, py, pw, st.rh);
+        ctx.fillStyle = p.reality === 'glitch' ? '#090713' : '#06131a';
+        ctx.fillRect(px, py + st.rh - 3, pw, 3);
+        ctx.fillStyle = p.reality === 'glitch' ? '#9d4edd' : '#2c7a62';
+        ctx.fillRect(px + 3, py + 6, Math.max(0, pw - 6), Math.max(0, st.rh - 10));
         ctx.fillStyle = topColor;
-        ctx.fillRect(Math.round(st.rx), Math.round(st.ry), Math.round(st.rw), 5);
+        ctx.fillRect(px, py, pw, 4);
+        ctx.fillStyle = p.reality === 'glitch' ? '#f5d0fe' : '#d1fae5';
+        ctx.fillRect(px + 4, py + 1, Math.max(0, pw - 12), 1);
+        ctx.fillStyle = p.reality === 'glitch' ? '#c026d3' : '#047857';
+        for (let node = 0; node < Math.floor(pw / 28); node++) {
+          const nx = px + 12 + node * 28;
+          ctx.fillRect(nx, py + st.rh - 8, 4, 2);
+          ctx.fillRect(nx + 1, py + st.rh - 6, 2, 3);
+        }
+
+        // Capas de suelo: filo de musgo iluminado arriba, estratos de roca
+        // abajo y pequeñas vetas deterministas para que cada tramo tenga textura.
+        const platformSeed = p.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+        const organicSurface = !p.reality && p.surfaceTint !== 'crystal' && p.kind !== 'sync';
+        ctx.fillStyle = organicSurface ? '#b2c96c' : p.reality === 'glitch' ? '#ffd4fb' : '#b5fff0';
+        ctx.fillRect(px + 2, py - 1, Math.max(0, pw - 4), 2);
+        ctx.fillStyle = organicSurface ? '#547a4c' : p.reality === 'glitch' ? '#672d7d' : '#155b59';
+        for (let tuft = 0; tuft < Math.floor(pw / 31); tuft++) {
+          const tx = px + 7 + tuft * 31 + ((platformSeed + tuft * 7) % 9);
+          if (tx + 4 >= px + pw) continue;
+          ctx.fillRect(tx, py - 3, 2, 3);
+          ctx.fillRect(tx + 2, py - 2, 2, 2);
+        }
+        for (let seam = 0; seam < Math.floor(pw / 42); seam++) {
+          const sx = px + 20 + seam * 42 + ((platformSeed + seam * 13) % 11);
+          if (sx >= px + pw - 4) continue;
+          ctx.fillStyle = organicSurface ? '#20443c' : p.reality === 'glitch' ? '#bd6dcc' : '#28665e';
+          ctx.fillRect(sx, py + 9, 2, Math.max(2, st.rh - 14));
+          ctx.fillStyle = organicSurface ? '#6e9b5c' : p.reality === 'glitch' ? '#f0abfc' : '#62b6a0';
+          ctx.fillRect(sx + 3, py + 11 + ((platformSeed + seam) % 5), 4, 1);
+          if (st.rh > 24) {
+            ctx.fillStyle = p.reality === 'glitch' ? '#9e58b4' : '#183d3b';
+            ctx.fillRect(sx - 3, py + st.rh - 8, 7, 2);
+          }
+        }
+        if (p.surfaceTint === 'crystal' || p.reality === 'glitch') {
+          for (let shard = 0; shard < Math.floor(pw / 58); shard++) {
+            const sx = px + 17 + shard * 58 + ((platformSeed + shard * 5) % 19);
+            ctx.fillStyle = shard % 2 ? '#f0abfc' : '#fef3c7';
+            ctx.fillRect(sx, py + 6, 2, 5);
+            ctx.fillRect(sx - 2, py + 8, 6, 2);
+          }
+        }
 
         if (p.kind === 'sync') {
           ctx.fillStyle = isWarning ? '#fef08a' : '#67e8f9';
@@ -1346,6 +2048,41 @@ export function GlitchTrailStage({
             3
           );
         }
+      }
+
+      // Pulso de reconstrucción: un frente poligonal de píxeles barre el plano y marca rutas.
+      if (reconstructionPulse > 0) {
+        const pulseT = 1 - reconstructionPulse / 1.15;
+        const radius = 70 + pulseT * 660;
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.72, reconstructionPulse * 0.72);
+        ctx.lineWidth = 3;
+        for (let ring = 0; ring < 3; ring++) {
+          const r = Math.max(8, radius - ring * 24);
+          ctx.strokeStyle = ring === 0
+            ? activeReality === 'glitch' ? '#f0abfc' : '#fde68a'
+            : activeReality === 'glitch' ? 'rgba(217, 70, 239, 0.7)' : 'rgba(45, 212, 191, 0.72)';
+          ctx.beginPath();
+          ctx.moveTo(pulseOrigin.x, pulseOrigin.y - r);
+          ctx.lineTo(pulseOrigin.x + r * 0.72, pulseOrigin.y - r * 0.28);
+          ctx.lineTo(pulseOrigin.x + r, pulseOrigin.y);
+          ctx.lineTo(pulseOrigin.x + r * 0.28, pulseOrigin.y + r * 0.72);
+          ctx.lineTo(pulseOrigin.x, pulseOrigin.y + r);
+          ctx.lineTo(pulseOrigin.x - r * 0.72, pulseOrigin.y + r * 0.28);
+          ctx.lineTo(pulseOrigin.x - r, pulseOrigin.y);
+          ctx.lineTo(pulseOrigin.x - r * 0.28, pulseOrigin.y - r * 0.72);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        for (let bit = 0; bit < 26; bit++) {
+          const angle = (bit / 26) * Math.PI * 2;
+          const radiusOffset = 0.88 + (bit % 4) * 0.035;
+          const bx = Math.round(pulseOrigin.x + Math.cos(angle) * radius * radiusOffset);
+          const by = Math.round(pulseOrigin.y + Math.sin(angle) * radius * radiusOffset);
+          ctx.fillStyle = bit % 3 === 0 ? '#fff1b8' : activeReality === 'glitch' ? '#e879f9' : '#5eead4';
+          ctx.fillRect(bx, by, bit % 2 ? 3 : 5, bit % 2 ? 5 : 3);
+        }
+        ctx.restore();
       }
 
       // Prismas Armónicos y haces ópticos hacia el Puente Central
@@ -1515,7 +2252,7 @@ export function GlitchTrailStage({
 
       // Portal Final Dorado hacia 1978
       if (isBoxInCam(4520, 620, 120, 130)) {
-        const open = activatedResonators.size >= 3;
+        const open = activatedResonators.size >= 3 && bossHealth <= 0;
         ctx.save();
         ctx.translate(4580, 730);
         ctx.fillStyle = '#334155';
@@ -1567,18 +2304,162 @@ export function GlitchTrailStage({
 
       // Remolinos de desfase
       for (const wisp of GLITCH_WISPS) {
-        const wx = wisp.cx + Math.cos(elapsed * wisp.speed + wisp.phase) * wisp.rx;
-        const wy = wisp.cy + Math.sin(elapsed * wisp.speed + wisp.phase) * wisp.ry;
+        const position = getWispPosition(wisp, elapsed);
+        const wx = position.x;
+        const wy = position.y;
         if (!isBoxInCam(wx - 20, wy - 20, 40, 40)) continue;
         ctx.save();
+        if (!position.realityActive) ctx.globalAlpha = reconstructionPulse > 0 ? 0.62 : 0.18;
         ctx.translate(wx, wy);
         ctx.rotate(reducedMotion ? 0 : elapsed * 5);
-        ctx.strokeStyle = '#e879f9';
+        ctx.strokeStyle = wisp.reality === 'stable' ? '#5eead4' : '#e879f9';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(-11, -11, 22, 22);
-        ctx.fillStyle = '#a855f7';
+        ctx.fillStyle = position.realityActive ? wisp.reality === 'stable' ? '#0f766e' : '#a855f7' : '#334155';
         ctx.fillRect(-5, -5, 10, 10);
         ctx.restore();
+      }
+
+      // Centinelas y drones: siluetas compactas, puntos débiles visibles y destello al impacto.
+      for (const enemy of enemies) {
+        if (!enemy.alive || !isBoxInCam(enemy.x - 30, enemy.y - 8, 60, 46)) continue;
+        ctx.save();
+        ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
+        const flash = enemy.hitFlash > 0;
+        if (enemy.kind === 'sentinel') {
+          ctx.fillStyle = '#080b18';
+          ctx.fillRect(-15, 4, 30, 24);
+          ctx.fillRect(-11, -5, 22, 13);
+          ctx.fillStyle = flash ? '#fff' : '#315d68';
+          ctx.fillRect(-12, 7, 24, 15);
+          ctx.fillStyle = '#0b1522';
+          ctx.fillRect(-8, -1, 16, 8);
+          ctx.fillStyle = '#facc6b';
+          ctx.fillRect(-5, 1, 4, 3);
+          ctx.fillRect(3, 1, 4, 3);
+          ctx.fillStyle = '#67e8f9';
+          ctx.fillRect(-10, 25, 7, 4);
+          ctx.fillRect(4, 25, 7, 4);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(-18, 10, 4, 8);
+          ctx.fillRect(14, 10, 4, 8);
+        } else if (enemy.kind === 'drone') {
+          const warn = enemy.fireTimer < 0.48;
+          ctx.fillStyle = '#080b18';
+          ctx.fillRect(-17, -6, 34, 24);
+          ctx.fillRect(-22, 1, 8, 10);
+          ctx.fillRect(14, 1, 8, 10);
+          ctx.fillStyle = flash ? '#fff' : '#4c2870';
+          ctx.fillRect(-13, -3, 26, 17);
+          ctx.fillStyle = warn ? '#fb7185' : '#e879f9';
+          ctx.fillRect(-5, 3, 10, 6);
+          ctx.fillStyle = '#f0abfc';
+          ctx.fillRect(-2, 4, 4, 3);
+          ctx.fillStyle = '#a78bfa';
+          ctx.fillRect(-24, 3, 3, 6);
+          ctx.fillRect(21, 3, 3, 6);
+          if (warn) {
+            ctx.fillStyle = 'rgba(251, 113, 133, 0.32)';
+            ctx.fillRect(-38, 6, 72, 2);
+          }
+        } else {
+          const chargeTelegraph = Math.abs(player.x - enemy.originX) < 245 && (elapsed + 0.4) % 3.2 < 0.62;
+          ctx.fillStyle = '#080b18';
+          ctx.fillRect(-21, -4, 42, 34);
+          ctx.fillRect(-16, -12, 32, 12);
+          ctx.fillStyle = flash ? '#fff' : '#52283e';
+          ctx.fillRect(-17, 0, 34, 24);
+          ctx.fillStyle = chargeTelegraph ? '#fb7185' : '#f472b6';
+          ctx.fillRect(-8, 5, 16, 8);
+          ctx.fillStyle = '#fef3c7';
+          ctx.fillRect(-4, 7, 8, 4);
+          ctx.fillStyle = '#312033';
+          ctx.fillRect(-13, 24, 9, 8);
+          ctx.fillRect(4, 24, 9, 8);
+          ctx.fillStyle = '#fda4af';
+          ctx.fillRect(-23, 5, 5, 4);
+          ctx.fillRect(18, 5, 5, 4);
+        }
+        ctx.fillStyle = '#070b18';
+        ctx.fillRect(-16, -12, 32, 3);
+        ctx.fillStyle = enemy.kind === 'guardian' ? '#f472b6' : '#67e8f9';
+        ctx.fillRect(-15, -11, Math.max(1, Math.round(30 * enemy.health / enemy.hp)), 2);
+        ctx.restore();
+      }
+
+      // Núcleo guardián: su ojo dorado marca exactamente la ventana segura de ataque.
+      if (bossActiveDisplay || activatedResonators.size >= 3) {
+        const bossX = 4340 + Math.sin(elapsed * 0.75) * 32;
+        const bossY = 630 + Math.sin(elapsed * 1.5) * 18;
+        const vulnerable = elapsed % 4.8 > 2.5 && elapsed % 4.8 < 3.6;
+        if (isBoxInCam(bossX - 66, bossY - 64, 132, 140)) {
+          ctx.save();
+          ctx.translate(Math.round(bossX), Math.round(bossY));
+          if (bossHealth > 0) {
+            ctx.fillStyle = 'rgba(217, 70, 239, 0.12)';
+            ctx.fillRect(-62, -48, 124, 92);
+            ctx.fillStyle = '#080714';
+            ctx.fillRect(-48, -38, 96, 72);
+            ctx.fillRect(-58, -24, 116, 42);
+            ctx.fillStyle = '#3a1a53';
+            ctx.fillRect(-41, -32, 82, 58);
+            ctx.fillRect(-52, -18, 104, 30);
+            ctx.fillStyle = '#a855f7';
+            ctx.fillRect(-30, -48, 60, 12);
+            ctx.fillRect(-23, 32, 46, 8);
+            ctx.fillStyle = '#f0abfc';
+            ctx.fillRect(-21, -45, 14, 5);
+            ctx.fillRect(9, -45, 14, 5);
+            ctx.fillStyle = '#090713';
+            ctx.fillRect(-29, -18, 58, 25);
+            ctx.fillStyle = vulnerable ? '#fde047' : '#e879f9';
+            ctx.fillRect(-20, -11, 40, 12);
+            ctx.fillStyle = vulnerable ? '#fff7c2' : '#f5d0fe';
+            ctx.fillRect(-7, -8, 14, 6);
+            ctx.fillStyle = '#090713';
+            ctx.fillRect(-16, 18, 9, 9);
+            ctx.fillRect(7, 18, 9, 9);
+          } else {
+            ctx.fillStyle = '#171324';
+            ctx.fillRect(-48, 10, 96, 20);
+            ctx.fillStyle = '#facc6b';
+            ctx.fillRect(-22, 17, 44, 4);
+            ctx.fillStyle = '#d8be88';
+            ctx.fillRect(-34, 8, 10, 3);
+            ctx.fillRect(24, 8, 10, 3);
+          }
+          ctx.restore();
+        }
+      }
+
+      // Vidas, disparo y escudo usan píxeles sólidos para conservar lectura durante la acción.
+      if (!extraLifeCollected && isBoxInCam(EXTRA_LIFE_PICKUP.x - 14, EXTRA_LIFE_PICKUP.y - 16, 28, 30)) {
+        const bob = reducedMotion ? 0 : Math.round(Math.sin(elapsed * 4) * 3);
+        ctx.fillStyle = '#3b0b28';
+        ctx.fillRect(EXTRA_LIFE_PICKUP.x - 10, EXTRA_LIFE_PICKUP.y - 7 + bob, 20, 17);
+        ctx.fillStyle = '#fb7185';
+        ctx.fillRect(EXTRA_LIFE_PICKUP.x - 7, EXTRA_LIFE_PICKUP.y - 11 + bob, 6, 8);
+        ctx.fillRect(EXTRA_LIFE_PICKUP.x + 1, EXTRA_LIFE_PICKUP.y - 11 + bob, 6, 8);
+        ctx.fillRect(EXTRA_LIFE_PICKUP.x - 7, EXTRA_LIFE_PICKUP.y - 4 + bob, 14, 10);
+        ctx.fillStyle = '#fff1f2';
+        ctx.fillRect(EXTRA_LIFE_PICKUP.x - 4, EXTRA_LIFE_PICKUP.y - 7 + bob, 3, 3);
+      }
+
+      for (const shot of playerShots) {
+        ctx.fillStyle = '#082737';
+        ctx.fillRect(Math.round(shot.x - 3), Math.round(shot.y - 2), 16, 12);
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(Math.round(shot.x), Math.round(shot.y), 10, 8);
+        ctx.fillStyle = '#f0fdfa';
+        ctx.fillRect(Math.round(shot.x + 3), Math.round(shot.y + 2), 4, 4);
+      }
+      for (const shot of hostileShots) {
+        ctx.fillStyle = '#4a102f';
+        ctx.fillRect(Math.round(shot.x - 5), Math.round(shot.y - 5), 14, 14);
+        ctx.fillStyle = '#fb7185';
+        ctx.fillRect(Math.round(shot.x - 2), Math.round(shot.y - 2), 8, 8);
+        ctx.fillStyle = '#fff1f2';
+        ctx.fillRect(Math.round(shot.x), Math.round(shot.y), 3, 3);
       }
 
       for (const ai of afterimages) {
@@ -1595,10 +2476,29 @@ export function GlitchTrailStage({
       }
       const px = Math.round(player.x);
       const py = Math.round(player.y);
+      const walkingFrame = Math.floor(elapsed * 12) % 4;
+      const stepping = Math.abs(player.vx) > 26 && player.grounded;
+      const legShift = stepping ? walkingFrame === 1 ? 3 : walkingFrame === 3 ? -3 : 0 : 0;
+      if (shieldTimer > 0) {
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.16)';
+        ctx.fillRect(px - 8, py - 7, 38, 48);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(px - 8, py + 1, 3, 24);
+        ctx.fillRect(px + 27, py + 1, 3, 24);
+        ctx.fillRect(px - 3, py - 7, 28, 2);
+        ctx.fillRect(px - 3, py + 39, 28, 2);
+      }
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(px + 2, py, 18, 8);
       ctx.fillStyle = hairColor;
-      ctx.fillRect(px + 2, py, 18, 6);
+      ctx.fillRect(px + 3, py + 1, 16, 6);
+      ctx.fillRect(px + 5, py - 2, 12, 3);
+      ctx.fillStyle = '#fff4b8';
+      ctx.fillRect(px + 6, py, 5, 2);
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(px + 3, py + 6, 16, 12);
       ctx.fillStyle = skinColor;
-      ctx.fillRect(px + 4, py + 6, 14, 10);
+      ctx.fillRect(px + 5, py + 7, 12, 8);
       ctx.fillStyle = '#05070f';
       if (player.facing >= 0) {
         ctx.fillRect(px + 11, py + 9, 2, 3);
@@ -1607,13 +2507,34 @@ export function GlitchTrailStage({
         ctx.fillRect(px + 5, py + 9, 2, 3);
         ctx.fillRect(px + 9, py + 9, 2, 3);
       }
+      ctx.fillStyle = '#d08f68';
+      ctx.fillRect(px + 5, py + 14, 12, 2);
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(px + 1, py + 15, 20, 14);
       ctx.fillStyle = shirtColor;
-      ctx.fillRect(px + 3, py + 16, 16, 11);
+      ctx.fillRect(px + 3, py + 16, 16, 12);
+      ctx.fillStyle = '#fff4b8';
+      ctx.fillRect(px + 4, py + 17, 3, 3);
+      ctx.fillStyle = '#0e2935';
+      ctx.fillRect(px + 10, py + 17, 2, 9);
       ctx.fillStyle = '#facc15';
       ctx.fillRect(px + 3, py + 25, 16, 2);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(px + 4, py + 27, 6, 7);
-      ctx.fillRect(px + 12, py + 27, 6, 7);
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(px + 3 + legShift, py + 27, 7, 7);
+      ctx.fillRect(px + 12 - legShift, py + 27, 7, 7);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(px + 4 + legShift, py + 28, 5, 4);
+      ctx.fillRect(px + 13 - legShift, py + 28, 5, 4);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(px + 5 + legShift, py + 29, 3, 1);
+      ctx.fillRect(px + 14 - legShift, py + 29, 3, 1);
+      if (attackCooldown > 0.19) {
+        const muzzleX = px + (player.facing > 0 ? player.w + 1 : -11);
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(muzzleX, py + 17, 9, 4);
+        ctx.fillStyle = '#fff1b8';
+        ctx.fillRect(muzzleX + (player.facing > 0 ? 5 : 1), py + 18, 3, 2);
+      }
       ctx.restore();
 
       for (const sp of sparks) {
@@ -1637,7 +2558,7 @@ export function GlitchTrailStage({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [hairColor, initialCheckpointId, notifyToast, shirtColor, skinColor]);
+  }, [hairColor, notifyToast, shirtColor, skinColor]);
 
   const trailDiamondsCollected = TRAIL_DIAMONDS.filter((d) =>
     collectedDiamondIds.includes(d.id)
@@ -1651,7 +2572,7 @@ export function GlitchTrailStage({
       <div className="absolute top-4 left-4 z-20 glass-hud rounded-xl px-4 py-3.5 space-y-2 max-w-md">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-mono-tabular tracking-[0.2em] text-[#00f3ff] uppercase">
-            AVENTURA ORIGINAL · LA GRAN ISLA DE LOS 70
+            CICATRIZ GLITCH 01 · ISLA DE LOS 70
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -1681,7 +2602,7 @@ export function GlitchTrailStage({
 
         <div>
           <h2 className="font-display text-lg sm:text-xl font-bold text-white leading-tight">
-            El Sendero del Glitch Perdido
+            La Máquina que Sueña
           </h2>
           <p className="text-[11px] font-mono-tabular text-amber-200">
             {activeCheckpointName}
@@ -1706,8 +2627,38 @@ export function GlitchTrailStage({
           </span>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/10 pt-1.5 font-mono-tabular text-[10px]">
+          <span className="inline-flex items-center gap-1 text-rose-200">
+            <span className="tracking-[0.12em]">HP</span>
+            <span className="inline-flex gap-0.5">{Array.from({ length: 3 }, (_, i) => (
+              <span key={i} className={`h-2.5 w-2.5 border border-rose-100/60 ${i < healthPoints ? 'bg-rose-400' : 'bg-slate-800'}`} />
+            ))}</span>
+          </span>
+          <span className="text-amber-200">VIDAS × {livesCount}</span>
+          <span className={doubleJumpAvailable ? 'text-yellow-200' : 'text-slate-400'}>
+            {doubleJumpAvailable ? 'SALTO DOBLE · LISTO' : 'ECO · SALTO DOBLE'}
+          </span>
+        </div>
+        {bossActiveDisplay && (
+          <div className="space-y-1 border-t border-fuchsia-300/25 pt-1.5 font-mono-tabular text-[9px] text-fuchsia-100">
+            <div className="flex justify-between gap-2"><span>GUARDIÁN DEL NÚCLEO</span><span>{bossHealthDisplay}/8</span></div>
+            <div className="h-2 border border-fuchsia-200/70 bg-black/60 p-[1px]">
+              <div className="h-full bg-fuchsia-400" style={{ width: `${Math.max(0, (bossHealthDisplay / 8) * 100)}%` }} />
+            </div>
+            <span className="text-yellow-200">Ojo dorado = núcleo vulnerable</span>
+          </div>
+        )}
+
+        <div className={`flex items-center justify-between gap-3 border-2 px-2.5 py-1.5 font-mono-tabular text-[10px] ${realityMode === 'stable' ? 'border-emerald-300/70 bg-emerald-950/65 text-emerald-100' : 'border-fuchsia-300/70 bg-fuchsia-950/65 text-fuchsia-100'}`}>
+          <span className="inline-flex items-center gap-2 font-bold tracking-widest">
+            <span className={`h-2.5 w-2.5 ${realityMode === 'stable' ? 'bg-emerald-300' : 'bg-fuchsia-300'} shadow-[0_0_8px_currentColor]`} />
+            {realityMode === 'stable' ? 'ESTADO ESTABLE' : 'ESTADO GLITCH'}
+          </span>
+          <span>Q / X · PULSO</span>
+        </div>
+
         <p className="text-[10px] font-mono-tabular text-slate-300 pt-1 border-t border-white/10">
-          A/D · Moverse | Espacio · Saltar | Shift · Fase | E · Sintonizar Prisma
+          A/D · Moverse | Espacio · Saltar{doubleJumpAvailable ? ' + doble salto' : ''} | Shift · Impulso | Z · Pulso | C · Escudo | Q · Realidad
         </p>
       </div>
 
@@ -1768,7 +2719,7 @@ export function GlitchTrailStage({
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex max-w-[68vw] flex-wrap items-center justify-end gap-1">
           <button
             type="button"
             onPointerDown={() => {
@@ -1781,12 +2732,41 @@ export function GlitchTrailStage({
           <button
             type="button"
             onPointerDown={() => {
+              virtualControlsRef.current.attackPressed = true;
+            }}
+            className="glass-hud px-2.5 py-2.5 rounded text-xs font-mono-tabular text-cyan-200 whitespace-nowrap shrink-0"
+            aria-label="Disparar Pulso de Energía"
+          >
+            [Z]
+          </button>
+          <button
+            type="button"
+            onPointerDown={() => {
+              virtualControlsRef.current.shieldPressed = true;
+            }}
+            className="glass-hud px-2.5 py-2.5 rounded text-xs font-mono-tabular text-sky-200 whitespace-nowrap shrink-0"
+            aria-label="Activar Escudo de Reconstrucción"
+          >
+            [C]
+          </button>
+          <button
+            type="button"
+            onPointerDown={() => {
               virtualControlsRef.current.dashPressed = true;
             }}
             className="glass-hud px-3 py-2.5 rounded text-xs font-mono-tabular text-[#00f3ff] inline-flex items-center gap-1 whitespace-nowrap shrink-0"
           >
             <Zap className="w-3.5 h-3.5" />
-            <span>Fase</span>
+            <span>Impulso</span>
+          </button>
+          <button
+            type="button"
+            onPointerDown={() => {
+              virtualControlsRef.current.realityPressed = true;
+            }}
+            className={`glass-hud px-2.5 py-2.5 rounded text-[10px] font-mono-tabular whitespace-nowrap shrink-0 ${realityMode === 'stable' ? 'text-emerald-200' : 'text-fuchsia-200'}`}
+          >
+            Q REALIDAD
           </button>
           <button
             type="button"

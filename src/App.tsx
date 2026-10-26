@@ -470,7 +470,13 @@ export default function App() {
     const isEditableTarget = (target: EventTarget | null): boolean => {
       if (!(target instanceof HTMLElement)) return false;
       const tag = target.tagName;
-      return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target.isContentEditable ||
+        Boolean(target.closest('[contenteditable="true"]'))
+      );
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -486,7 +492,13 @@ export default function App() {
         setLevelMenuOpen(false);
         return;
       }
-      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'm') {
+      if (
+        activeState !== 'state-archipelago' &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        e.key.toLowerCase() === 'm'
+      ) {
         const nextMuted = bgmEngine.toggleMute();
         if (!nextMuted) {
           retroAudio.uiClick();
@@ -495,7 +507,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [activeState]);
 
   // Detector de la secuencia secreta ADSWADSWBA en la pantalla inicial
   useEffect(() => {
@@ -953,7 +965,7 @@ export default function App() {
               <div className="flex items-center justify-between gap-3 pt-1">
                 <span className="text-[11px] font-mono-tabular text-slate-400">
                   {activeState === 'state-archipelago'
-                    ? '[I] Inventario · [ESC] Cerrar'
+                    ? '[ENTER] Inventario · [M] Mapa · [ESC] Cerrar'
                     : '[ESC] Cerrar'}
                 </span>
                 <button
@@ -1547,10 +1559,10 @@ export default function App() {
             hairColor={hairColor}
             shirtColor={shirtColor}
             collectedDiamondIds={progressState.island70s.collectedDiamondIds}
+            discoveredEchoIds={progressState.island70s.discoveredEchoIds}
             alreadyRestoredBefore={Boolean(
               progressState.games['glitch-trail']?.ceremonyShown
             )}
-            initialCheckpointId={progressState.island70s.checkpoints['glitch-trail']}
             onCheckpointReached={(checkpointId) => {
               setProgressState((prev) =>
                 saveStageCheckpoint(prev, 'glitch-trail', checkpointId)

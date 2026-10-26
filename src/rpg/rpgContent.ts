@@ -25,8 +25,12 @@ export type RpgAreaId =
   | 'dungeon-laberinto-origen'
   | 'secret-sala-breakout'
   | 'interior-cronoscopio'
+  | 'interior-archivo-norte'
+  | 'interior-observatorio-boreal'
   | 'chamber-boveda-cronoscopio'
   | 'cave-gruta-cascada'
+  | 'cave-cavidad-aurora'
+  | 'cave-camara-eco'
   | 'island-80s';
 
 export type RpgItemCategory =
@@ -146,6 +150,21 @@ export interface TunnelPortalSpec {
   secretId?: string;
 }
 
+export interface IslandCaveEntranceSpec {
+  id: string;
+  label: string;
+  actionLabel: string;
+  x: number;
+  y: number;
+  accentHex: string;
+  targetArea: RpgAreaId;
+  targetSpawnX: number;
+  targetSpawnY: number;
+  returnExteriorX: number;
+  returnExteriorY: number;
+  secretId: string;
+}
+
 export interface RpgChestSpec {
   id: string;
   areaId: RpgAreaId;
@@ -194,7 +213,7 @@ export interface RpgSubAreaNpcSpec {
 
 export interface PressureTileSpec {
   id: string;
-  orderIndex: number; // 1, 2, 3
+  orderIndex: number;
   label: string;
   x: number;
   y: number;
@@ -482,6 +501,30 @@ export const RPG_ITEMS: Record<string, RpgItemSpec> = {
     description:
       'Óptica de deflexión magnética XY que traza líneas puras de luz para Lunar Lander y Asteroids (1979). Obtenida al alinear el proyector del Museo Viviente.',
     usageHint: 'Sincroniza la galería norte del Museo Viviente de los 70.',
+    usableAction: 'inspect',
+  },
+  'item-memoria-aurora': {
+    id: 'item-memoria-aurora',
+    name: 'Memoria de la Aurora',
+    category: 'cinta-memoria',
+    categoryLabel: 'REGISTRO DE EXPLORACIÓN',
+    accentHex: '#67e8f9',
+    shortCode: 'MEM-AU',
+    description:
+      'Registro recuperado en la Cordillera del Primer Pulso. Conserva la secuencia de destellos que orientaba a sus antiguos cartógrafos.',
+    usageHint: 'Pieza de archivo persistente; puede consultarse desde la Mochila [I].',
+    usableAction: 'inspect',
+  },
+  'item-cristal-armonico': {
+    id: 'item-cristal-armonico',
+    name: 'Cristal Armónico Boreal',
+    category: 'reliquia',
+    categoryLabel: 'RELIQUIA DE LA CORDILLERA',
+    accentHex: '#a5f3fc',
+    shortCode: 'CRB-10',
+    description:
+      'Fragmento de cuarzo que retiene un eco estable de la aurora; recompensa de la cámara más profunda de la cordillera.',
+    usageHint: 'Reliquia persistente conservada en el archivo de exploración.',
     usableAction: 'inspect',
   },
 };
@@ -828,6 +871,50 @@ export const ISLAND_70S_BUILDINGS: ExteriorBuildingSpec[] = [
     returnExteriorX: 1640,
     returnExteriorY: 1068,
   },
+  {
+    id: 'bldg-archivo-cartografia-norte',
+    name: 'Archivo de Cartografía Polar',
+    subtitle: 'Cordillera del Primer Pulso · Cartas de ruta y registros de aurora',
+    archStyle: 'cottage-archive',
+    x: 1168,
+    y: -248,
+    w: 144,
+    h: 88,
+    roofHex: '#2563eb',
+    roofShadeHex: '#1e3a8a',
+    wallHex: '#d9e4df',
+    trimHex: '#67e8f9',
+    signText: 'CARTOGRAFÍA',
+    doorX: 1240,
+    doorY: -158,
+    targetArea: 'interior-archivo-norte',
+    targetSpawnX: 360,
+    targetSpawnY: 430,
+    returnExteriorX: 1240,
+    returnExteriorY: -126,
+  },
+  {
+    id: 'bldg-observatorio-boreal',
+    name: 'Estación de Señales Boreales',
+    subtitle: 'Cordillera del Primer Pulso · Lentes y receptores de larga distancia',
+    archStyle: 'chrono-dome',
+    x: 2528,
+    y: -232,
+    w: 160,
+    h: 92,
+    roofHex: '#0e7490',
+    roofShadeHex: '#164e63',
+    wallHex: '#cbd5e1',
+    trimHex: '#a5f3fc',
+    signText: 'ESTACIÓN',
+    doorX: 2608,
+    doorY: -138,
+    targetArea: 'interior-observatorio-boreal',
+    targetSpawnX: 360,
+    targetSpawnY: 430,
+    returnExteriorX: 2608,
+    returnExteriorY: -106,
+  },
 ];
 
 /* ============================================================================
@@ -1109,6 +1196,37 @@ export const WATERFALL_SECRET_ENTRANCE = {
   returnExteriorY: 752,
 };
 
+export const ISLAND_NORTH_CAVE_ENTRANCES: IslandCaveEntranceSpec[] = [
+  {
+    id: 'north-cave-aurora-entry',
+    label: 'Cavidad de la Aurora',
+    actionLabel: 'Entrar en la Cavidad',
+    x: 1392,
+    y: -144,
+    accentHex: '#67e8f9',
+    targetArea: 'cave-cavidad-aurora',
+    targetSpawnX: 360,
+    targetSpawnY: 430,
+    returnExteriorX: 1392,
+    returnExteriorY: -112,
+    secretId: 'secret-cavidad-aurora',
+  },
+  {
+    id: 'north-cave-echo-entry',
+    label: 'Cámara del Eco Boreal',
+    actionLabel: 'Descender a la Cámara',
+    x: 2848,
+    y: -128,
+    accentHex: '#a5f3fc',
+    targetArea: 'cave-camara-eco',
+    targetSpawnX: 360,
+    targetSpawnY: 430,
+    returnExteriorX: 2848,
+    returnExteriorY: -96,
+    secretId: 'secret-camara-eco-boreal',
+  },
+];
+
 /* Embarcadero en La Costa y las Ruinas del Tiempo hacia la siguiente isla */
 export const HARBOR_80S_FERRY = {
   id: 'ferry-to-80s',
@@ -1236,6 +1354,26 @@ export const RPG_CHESTS: RpgChestSpec[] = [
     y: 205,
     accentHex: '#f97316',
     rewardItemIds: ['item-llave-binaria'],
+  },
+  {
+    id: 'chest-cavidad-aurora',
+    areaId: 'cave-cavidad-aurora',
+    label: 'Archivo Sellado de la Aurora',
+    x: 570,
+    y: 188,
+    accentHex: '#67e8f9',
+    rewardItemIds: ['item-memoria-aurora'],
+    requiresPuzzleId: 'puzzle-aurora-3-nodos',
+  },
+  {
+    id: 'chest-camara-eco-boreal',
+    areaId: 'cave-camara-eco',
+    label: 'Relicario del Eco Boreal',
+    x: 570,
+    y: 188,
+    accentHex: '#a5f3fc',
+    rewardItemIds: ['item-cristal-armonico'],
+    requiresPuzzleId: 'puzzle-eco-4-frecuencias',
   },
 ];
 
@@ -1523,6 +1661,37 @@ export const RPG_EXAMINABLES: RpgExaminableSpec[] = [
     secretIdToDiscover: 'secret-sala-breakout-1976',
     clueIdToDiscover: 'clue-wozniak-ttl',
   },
+  {
+    id: 'exam-archivo-polar-carta',
+    areaId: 'interior-archivo-norte',
+    label: 'Carta de la Cordillera · Lectura de Aurora',
+    actionLabel: 'Leer Carta Celeste',
+    x: 360,
+    y: 210,
+    accentHex: '#67e8f9',
+    category: 'CARTOGRAFÍA POLAR · CLAVE DE LA CAVIDAD',
+    paragraphs: [
+      'El mapa registra tres pulsos sobre la cresta norte. La señal más baja despierta primero; la central responde después y la más alta cierra el circuito.',
+      'Una anotación al margen dice: «El eco se lee de la base al cielo, no de oeste a este».',
+    ],
+    hint: 'En la Cavidad de la Aurora, pisa los tres nodos de menor a mayor altura.',
+    clueIdToDiscover: 'clue-lectura-aurora',
+  },
+  {
+    id: 'exam-estacion-boreal-receptor',
+    areaId: 'interior-observatorio-boreal',
+    label: 'Receptor de Cuatro Bandas',
+    actionLabel: 'Sintonizar Receptor',
+    x: 360,
+    y: 218,
+    accentHex: '#a5f3fc',
+    category: 'ESTACIÓN BOREAL · CLAVE DE FRECUENCIAS',
+    paragraphs: [
+      'Cuatro filtros de cuarzo guardan la última medición: primero el destello más tenue, después el que cruza la línea del horizonte, luego el pulso doble y, al final, la señal que vuelve desde el cielo.',
+    ],
+    hint: 'En la Cámara del Eco Boreal, sigue el orden tenue → horizonte → doble → retorno.',
+    clueIdToDiscover: 'clue-cuatro-frecuencias-boreales',
+  },
 ];
 
 /* ============================================================================
@@ -1612,6 +1781,158 @@ export const RPG_SUBAREA_NPCS: RpgSubAreaNpcSpec[] = [
    7. DEFINICIÓN ESPACIAL DE INTERIORES, CUEVAS, SALAS SECRETAS E ISLA 80s
    ============================================================================ */
 export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> = {
+  'interior-archivo-norte': {
+    id: 'interior-archivo-norte',
+    numberLabel: 'CORDILLERA DEL PRIMER PULSO · ARCHIVO',
+    name: 'Archivo de Cartografía Polar',
+    subtitle: 'Cartas de ruta, cuadernos de campo y la lectura de la aurora boreal',
+    accentHex: '#67e8f9',
+    floorHex: '#303f45',
+    floorGridHex: 'rgba(165, 243, 252, 0.08)',
+    wallHex: '#14272d',
+    borderHex: '#67e8f9',
+    width: 720,
+    height: 490,
+    walkableBounds: { x: 84, y: 112, w: 552, h: 336 },
+    obstacles: [
+      { id: 'polar-map-table', x: 270, y: 156, w: 180, h: 54 },
+      { id: 'polar-shelf-west', x: 130, y: 150, w: 90, h: 48 },
+      { id: 'polar-shelf-east', x: 500, y: 150, w: 90, h: 48 },
+    ],
+    exits: [
+      {
+        id: 'exit-archivo-polar',
+        label: 'Puerta a la Cordillera del Primer Pulso',
+        actionLabel: 'Salir a la Cordillera',
+        x: 360,
+        y: 440,
+        accentHex: '#67e8f9',
+        targetArea: 'exterior-70s',
+        returnToSavedExterior: true,
+      },
+    ],
+    decorProps: [
+      { kind: 'archive-shelf', x: 130, y: 150, w: 90, h: 48, accentHex: '#67e8f9', label: 'ATLAS POLAR' },
+      { kind: 'archive-shelf', x: 500, y: 150, w: 90, h: 48, accentHex: '#a5f3fc', label: 'RUTAS NORTE' },
+    ],
+  },
+  'interior-observatorio-boreal': {
+    id: 'interior-observatorio-boreal',
+    numberLabel: 'CORDILLERA DEL PRIMER PULSO · ESTACIÓN',
+    name: 'Estación de Señales Boreales',
+    subtitle: 'Receptores analógicos que registran cuatro ecos a través de la montaña',
+    accentHex: '#a5f3fc',
+    floorHex: '#26343c',
+    floorGridHex: 'rgba(103, 232, 249, 0.08)',
+    wallHex: '#101c26',
+    borderHex: '#a5f3fc',
+    width: 720,
+    height: 490,
+    walkableBounds: { x: 84, y: 112, w: 552, h: 336 },
+    obstacles: [
+      { id: 'boreal-receiver', x: 270, y: 156, w: 180, h: 64 },
+      { id: 'boreal-rack-west', x: 140, y: 152, w: 72, h: 56 },
+      { id: 'boreal-rack-east', x: 508, y: 152, w: 72, h: 56 },
+    ],
+    exits: [
+      {
+        id: 'exit-estacion-boreal',
+        label: 'Puerta a la Cordillera del Primer Pulso',
+        actionLabel: 'Salir a la Cordillera',
+        x: 360,
+        y: 440,
+        accentHex: '#a5f3fc',
+        targetArea: 'exterior-70s',
+        returnToSavedExterior: true,
+      },
+    ],
+    decorProps: [
+      { kind: 'vector-projector', x: 270, y: 156, w: 180, h: 64, accentHex: '#a5f3fc', label: 'RECEPTOR BOREAL' },
+      { kind: 'crt-rack', x: 140, y: 152, w: 72, h: 56, accentHex: '#67e8f9', label: 'BANDA I' },
+      { kind: 'crt-rack', x: 508, y: 152, w: 72, h: 56, accentHex: '#67e8f9', label: 'BANDA IV' },
+    ],
+  },
+  'cave-cavidad-aurora': {
+    id: 'cave-cavidad-aurora',
+    numberLabel: 'CORDILLERA DEL PRIMER PULSO · CAVIDAD',
+    name: 'Cavidad de la Aurora',
+    subtitle: 'Tres nodos de resonancia conservan el orden ascendente de la luz',
+    accentHex: '#67e8f9',
+    floorHex: '#263743',
+    floorGridHex: 'rgba(103, 232, 249, 0.08)',
+    wallHex: '#0c1720',
+    borderHex: '#67e8f9',
+    width: 720,
+    height: 490,
+    walkableBounds: { x: 84, y: 112, w: 552, h: 336 },
+    obstacles: [],
+    exits: [
+      {
+        id: 'exit-cavidad-aurora',
+        label: 'Boca de la Cavidad de la Aurora',
+        actionLabel: 'Volver a la Cordillera',
+        x: 360,
+        y: 440,
+        accentHex: '#67e8f9',
+        targetArea: 'exterior-70s',
+        returnToSavedExterior: true,
+      },
+    ],
+    pressurePuzzle: {
+      puzzleId: 'puzzle-aurora-3-nodos',
+      tiles: [
+        { id: 'aurora-node-low', orderIndex: 1, label: 'I · destello bajo', x: 250, y: 340, accentHex: '#67e8f9' },
+        { id: 'aurora-node-mid', orderIndex: 2, label: 'II · pulso medio', x: 360, y: 270, accentHex: '#a5f3fc' },
+        { id: 'aurora-node-high', orderIndex: 3, label: 'III · eco alto', x: 470, y: 340, accentHex: '#e0f2fe' },
+      ],
+      successMessage: '¡La secuencia ascendente de la aurora abrió el Archivo Sellado!',
+    },
+    decorProps: [
+      { kind: 'cave-crystal', x: 128, y: 132, w: 70, h: 54, accentHex: '#67e8f9', label: 'NODO I' },
+      { kind: 'cave-crystal', x: 510, y: 132, w: 70, h: 54, accentHex: '#a5f3fc', label: 'NODO III' },
+    ],
+  },
+  'cave-camara-eco': {
+    id: 'cave-camara-eco',
+    numberLabel: 'CORDILLERA DEL PRIMER PULSO · CÁMARA',
+    name: 'Cámara del Eco Boreal',
+    subtitle: 'Cuatro bandas de cuarzo responden a una pauta de ida y retorno',
+    accentHex: '#a5f3fc',
+    floorHex: '#252f3d',
+    floorGridHex: 'rgba(165, 243, 252, 0.08)',
+    wallHex: '#0c1420',
+    borderHex: '#a5f3fc',
+    width: 720,
+    height: 490,
+    walkableBounds: { x: 84, y: 112, w: 552, h: 336 },
+    obstacles: [],
+    exits: [
+      {
+        id: 'exit-camara-eco',
+        label: 'Boca de la Cámara del Eco Boreal',
+        actionLabel: 'Volver a la Cordillera',
+        x: 360,
+        y: 440,
+        accentHex: '#a5f3fc',
+        targetArea: 'exterior-70s',
+        returnToSavedExterior: true,
+      },
+    ],
+    pressurePuzzle: {
+      puzzleId: 'puzzle-eco-4-frecuencias',
+      tiles: [
+        { id: 'echo-frequency-soft', orderIndex: 1, label: 'I · tenue', x: 220, y: 330, accentHex: '#67e8f9' },
+        { id: 'echo-frequency-horizon', orderIndex: 2, label: 'II · horizonte', x: 330, y: 250, accentHex: '#7dd3fc' },
+        { id: 'echo-frequency-double', orderIndex: 3, label: 'III · doble', x: 440, y: 330, accentHex: '#a5f3fc' },
+        { id: 'echo-frequency-return', orderIndex: 4, label: 'IV · retorno', x: 530, y: 250, accentHex: '#e0f2fe' },
+      ],
+      successMessage: '¡Las cuatro frecuencias se alinearon y revelaron el Relicario del Eco!',
+    },
+    decorProps: [
+      { kind: 'cave-crystal', x: 130, y: 132, w: 68, h: 54, accentHex: '#67e8f9', label: 'BANDA I' },
+      { kind: 'cave-crystal', x: 520, y: 132, w: 68, h: 54, accentHex: '#a5f3fc', label: 'BANDA IV' },
+    ],
+  },
   'interior-centro-historia': {
     id: 'interior-centro-historia',
     numberLabel: 'PUEBLO DEL ORIGEN · INTERIOR',
@@ -2091,17 +2412,23 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
     wallHex: '#070d19',
     borderHex: '#22d3ee',
     width: 980,
-    height: 580,
-    walkableBounds: { x: 76, y: 118, w: 828, h: 416 },
+    height: 720,
+    walkableBounds: { x: 76, y: 118, w: 828, h: 560 },
     obstacles: [
-      { id: 'mus-ped-1', x: 133, y: 175, w: 64, h: 46 },
-      { id: 'mus-ped-2', x: 283, y: 175, w: 64, h: 46 },
-      { id: 'mus-ped-3', x: 133, y: 315, w: 64, h: 46 },
-      { id: 'mus-ped-4', x: 283, y: 315, w: 64, h: 46 },
-      { id: 'mus-ped-5', x: 633, y: 175, w: 64, h: 46 },
-      { id: 'mus-ped-6', x: 783, y: 175, w: 64, h: 46 },
-      { id: 'mus-ped-7', x: 633, y: 315, w: 64, h: 46 },
-      { id: 'mus-ped-8', x: 783, y: 315, w: 64, h: 46 },
+      { id: 'mus-ped-1', x: 133, y: 210, w: 64, h: 46 },
+      { id: 'mus-ped-2', x: 283, y: 210, w: 64, h: 46 },
+      { id: 'mus-ped-3', x: 633, y: 210, w: 64, h: 46 },
+      { id: 'mus-ped-4', x: 783, y: 210, w: 64, h: 46 },
+      { id: 'mus-ped-5', x: 133, y: 310, w: 64, h: 46 },
+      { id: 'mus-ped-6', x: 283, y: 310, w: 64, h: 46 },
+      { id: 'mus-ped-7', x: 633, y: 310, w: 64, h: 46 },
+      { id: 'mus-ped-8', x: 783, y: 310, w: 64, h: 46 },
+      { id: 'mus-ped-9', x: 133, y: 410, w: 64, h: 46 },
+      { id: 'mus-ped-10', x: 283, y: 410, w: 64, h: 46 },
+      { id: 'mus-ped-11', x: 633, y: 410, w: 64, h: 46 },
+      { id: 'mus-ped-12', x: 783, y: 410, w: 64, h: 46 },
+      { id: 'mus-ped-13', x: 133, y: 510, w: 64, h: 46 },
+      { id: 'mus-ped-14', x: 283, y: 510, w: 64, h: 46 },
       { id: 'mus-vec-proj', x: 446, y: 144, w: 88, h: 46 },
     ],
     exits: [
@@ -2110,7 +2437,7 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
         label: 'Puerta Principal · Las Ruinas del Primer Pulso',
         actionLabel: 'Salir a la Explanada',
         x: 490,
-        y: 524,
+        y: 660,
         accentHex: '#22d3ee',
         targetArea: 'exterior-70s',
         returnToSavedExterior: true,
@@ -2129,7 +2456,7 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       {
         kind: 'museum-pedestal',
         x: 133,
-        y: 175,
+        y: 210,
         w: 64,
         h: 46,
         accentHex: '#38bdf8',
@@ -2139,7 +2466,7 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       {
         kind: 'museum-pedestal',
         x: 283,
-        y: 175,
+        y: 210,
         w: 64,
         h: 46,
         accentHex: '#f59e0b',
@@ -2148,18 +2475,28 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       },
       {
         kind: 'museum-pedestal',
-        x: 133,
-        y: 315,
+        x: 633,
+        y: 210,
         w: 64,
         h: 46,
         accentHex: '#00f3ff',
-        label: '1972 PONG [JUG]',
+        label: '1972 PONG · JUGAR',
         exhibitId: 'exhibit-pong-1972',
       },
       {
         kind: 'museum-pedestal',
-        x: 283,
-        y: 315,
+        x: 783,
+        y: 210,
+        w: 64,
+        h: 46,
+        accentHex: '#f472b6',
+        label: '1973 GOTCHA',
+        exhibitId: 'exhibit-gotcha-1973',
+      },
+      {
+        kind: 'museum-pedestal',
+        x: 133,
+        y: 310,
         w: 64,
         h: 46,
         accentHex: '#eab308',
@@ -2168,8 +2505,28 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       },
       {
         kind: 'museum-pedestal',
+        x: 283,
+        y: 310,
+        w: 64,
+        h: 46,
+        accentHex: '#a3e635',
+        label: '1974 TANK',
+        exhibitId: 'exhibit-tank-1974',
+      },
+      {
+        kind: 'museum-pedestal',
         x: 633,
-        y: 175,
+        y: 310,
+        w: 64,
+        h: 46,
+        accentHex: '#fb923c',
+        label: '1975 GUN FIGHT',
+        exhibitId: 'exhibit-gun-fight-1975',
+      },
+      {
+        kind: 'museum-pedestal',
+        x: 783,
+        y: 310,
         w: 64,
         h: 46,
         accentHex: '#f97316',
@@ -2178,8 +2535,28 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       },
       {
         kind: 'museum-pedestal',
-        x: 783,
-        y: 175,
+        x: 133,
+        y: 410,
+        w: 64,
+        h: 46,
+        accentHex: '#f43f5e',
+        label: '1976 DEATH RACE',
+        exhibitId: 'exhibit-death-race-1976',
+      },
+      {
+        kind: 'museum-pedestal',
+        x: 283,
+        y: 410,
+        w: 64,
+        h: 46,
+        accentHex: '#c084fc',
+        label: '1977 SPACE WARS',
+        exhibitId: 'exhibit-space-wars-1977',
+      },
+      {
+        kind: 'museum-pedestal',
+        x: 633,
+        y: 410,
         w: 64,
         h: 46,
         accentHex: '#39ff14',
@@ -2188,8 +2565,8 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       },
       {
         kind: 'museum-pedestal',
-        x: 633,
-        y: 315,
+        x: 783,
+        y: 410,
         w: 64,
         h: 46,
         accentHex: '#a78bfa',
@@ -2198,13 +2575,23 @@ export const SUB_AREAS: Record<Exclude<RpgAreaId, 'exterior-70s'>, SubAreaSpec> 
       },
       {
         kind: 'museum-pedestal',
-        x: 783,
-        y: 315,
+        x: 133,
+        y: 510,
         w: 64,
         h: 46,
         accentHex: '#22d3ee',
-        label: '1979 ASTEROIDS',
+        label: '1979 ASTEROIDS · PEND.',
         exhibitId: 'exhibit-asteroids-1979',
+      },
+      {
+        kind: 'museum-pedestal',
+        x: 283,
+        y: 510,
+        w: 64,
+        h: 46,
+        accentHex: '#38bdf8',
+        label: '1979 GALAXIAN',
+        exhibitId: 'exhibit-galaxian-1979',
       },
     ],
   },
@@ -2473,14 +2860,20 @@ export interface MuseumPedestalPlacement {
 }
 
 export const MUSEUM_PEDESTAL_SPOTS: MuseumPedestalPlacement[] = [
-  { exhibitId: 'exhibit-computer-space-1971', x: 165, y: 224 },
-  { exhibitId: 'exhibit-odyssey-1972', x: 315, y: 224 },
-  { exhibitId: 'exhibit-pong-1972', x: 165, y: 364 },
-  { exhibitId: 'exhibit-gran-trak-1974', x: 315, y: 364 },
-  { exhibitId: 'exhibit-breakout-1976', x: 665, y: 224 },
-  { exhibitId: 'exhibit-space-invaders-1978', x: 815, y: 224 },
-  { exhibitId: 'exhibit-lunar-lander-1979', x: 665, y: 364 },
-  { exhibitId: 'exhibit-asteroids-1979', x: 815, y: 364 },
+  { exhibitId: 'exhibit-computer-space-1971', x: 165, y: 259 },
+  { exhibitId: 'exhibit-odyssey-1972', x: 315, y: 259 },
+  { exhibitId: 'exhibit-pong-1972', x: 665, y: 259 },
+  { exhibitId: 'exhibit-gotcha-1973', x: 815, y: 259 },
+  { exhibitId: 'exhibit-gran-trak-1974', x: 165, y: 359 },
+  { exhibitId: 'exhibit-tank-1974', x: 315, y: 359 },
+  { exhibitId: 'exhibit-gun-fight-1975', x: 665, y: 359 },
+  { exhibitId: 'exhibit-breakout-1976', x: 815, y: 359 },
+  { exhibitId: 'exhibit-death-race-1976', x: 165, y: 459 },
+  { exhibitId: 'exhibit-space-wars-1977', x: 315, y: 459 },
+  { exhibitId: 'exhibit-space-invaders-1978', x: 665, y: 459 },
+  { exhibitId: 'exhibit-lunar-lander-1979', x: 815, y: 459 },
+  { exhibitId: 'exhibit-asteroids-1979', x: 165, y: 559 },
+  { exhibitId: 'exhibit-galaxian-1979', x: 315, y: 559 },
 ];
 
 export interface GuardianCreatureSpec {
@@ -2784,4 +3177,3 @@ export function isWalkableInSubArea(
   }
   return true;
 }
-
