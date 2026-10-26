@@ -251,12 +251,12 @@ function drawHandcraftedTree(
   ctx.translate(x, y);
 
   // 1. Sombra elíptica escalonada en el suelo con desvanecimiento de borde
-  ctx.fillStyle = 'rgba(5, 14, 10, 0.44)';
-  ctx.fillRect(-20, 2, 40, 8);
-  ctx.fillRect(-15, 10, 30, 3);
-  ctx.fillRect(-12, -1, 24, 3);
-  ctx.fillStyle = 'rgba(5, 14, 10, 0.22)';
-  ctx.fillRect(-24, 1, 48, 10);
+  ctx.fillStyle = 'rgba(5, 14, 10, 0.16)';
+  ctx.fillRect(-25, 3, 47, 10);
+  ctx.fillStyle = 'rgba(5, 14, 10, 0.30)';
+  ctx.fillRect(-20, 5, 38, 8);
+  ctx.fillStyle = 'rgba(5, 14, 10, 0.42)';
+  ctx.fillRect(-15, 7, 28, 5);
 
   if (variant === 'pine') {
     // ----------------------------------------------------
@@ -1025,6 +1025,8 @@ export function drawPixelAvatar4Dir(
   const animT = reducedMotion ? 0 : t;
   const stepPhase = walking ? Math.floor(animT * (sprinting ? 11 : 7.5)) % 4 : 0;
   const bob = walking && (stepPhase === 1 || stepPhase === 3) ? 2 : 0;
+  const idleBob = !walking && !reducedMotion && Math.sin(animT * 2.8) > 0.62 ? 1 : 0;
+  const idleBlink = !walking && !reducedMotion && (animT % 4.8) > 4.64;
   const stride =
     !walking || reducedMotion ? 0 : stepPhase === 1 ? 3 : stepPhase === 3 ? -3 : 0;
   const armSwing =
@@ -1032,12 +1034,14 @@ export function drawPixelAvatar4Dir(
   const interactReach = (opts?.interactAnim ?? 0) > 0 ? 3 : 0;
 
   ctx.save();
-  ctx.translate(Math.round(ax), Math.round(ay - bob));
+  ctx.translate(Math.round(ax), Math.round(ay - bob - idleBob));
 
   // 1. Sombra suave elíptica de oclusión en el suelo
-  ctx.fillStyle = 'rgba(6, 10, 18, 0.48)';
-  ctx.fillRect(-9, 4 + bob, 18, 5);
-  ctx.fillRect(-6, 8 + bob, 12, 2);
+  ctx.fillStyle = 'rgba(6, 10, 18, 0.24)';
+  ctx.fillRect(-10, 5 + bob + idleBob, 20, 5);
+  ctx.fillStyle = 'rgba(6, 10, 18, 0.4)';
+  ctx.fillRect(-7, 6 + bob + idleBob, 14, 4);
+  ctx.fillRect(-4, 9 + bob + idleBob, 8, 1);
 
   // Halo de la Lámpara de Fósforo si está encendida
   if (opts?.lanternActive) {
@@ -1054,6 +1058,20 @@ export function drawPixelAvatar4Dir(
   }
 
   const darkOutline = '#070b14';
+
+  // Mochila de exploración visible desde atrás, separada por contorno y luz de borde.
+  if (facingDir === 'up') {
+    ctx.fillStyle = darkOutline;
+    ctx.fillRect(-8, -18, 16, 10);
+    ctx.fillStyle = '#8b4e20';
+    ctx.fillRect(-6, -17, 12, 8);
+    ctx.fillStyle = '#c47d44';
+    ctx.fillRect(-5, -16, 3, 5);
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(3, -16, 2, 6);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-1, -14, 3, 2);
+  }
 
   // 2. PIERNAS Y BOTAS DE EXPLORADOR
   ctx.fillStyle = darkOutline;
@@ -1279,6 +1297,19 @@ export function drawPixelAvatar4Dir(
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-6, -23, 1, 2);
     }
+  }
+
+  // Parpadeo breve y espaciado para dar vida al reposo sin distraer al caminar.
+  if (idleBlink && facingDir === 'down') {
+    ctx.fillStyle = skin;
+    ctx.fillRect(-6, -22, 4, 2);
+    ctx.fillRect(2, -22, 4, 2);
+  } else if (idleBlink && facingDir === 'right') {
+    ctx.fillStyle = skin;
+    ctx.fillRect(2, -22, 4, 2);
+  } else if (idleBlink && facingDir === 'left') {
+    ctx.fillStyle = skin;
+    ctx.fillRect(-6, -22, 4, 2);
   }
 
   // Corona Dorada del Origen (Cosmético de Arquitecto)
@@ -2239,6 +2270,15 @@ function drawGbcWalkableSurfaceTile(
       ctx.fillRect(wx + 16, wy + 20, 14, 5);
     }
 
+    // Motas de hoja y sombras pequeñas: variación cromática legible sin ruido de píxel.
+    const fleckX = 3 + ((h >> 8) % 25);
+    const fleckY = 3 + ((h >> 13) % 25);
+    ctx.fillStyle = grassDark;
+    ctx.fillRect(wx + fleckX, wy + fleckY, 3 + (h % 3), 1);
+    ctx.fillRect(wx + ((fleckX + 13) % 29), wy + ((fleckY + 9) % 29), 2, 2);
+    ctx.fillStyle = grassLight;
+    ctx.fillRect(wx + ((fleckX + 7) % 29), wy + ((fleckY + 16) % 29), 2, 1);
+
     // 3. Penachos de hierba GBA auténticos de 3 briznas (izquierda, centro alta, derecha)
     const drawGrassTuft = (gx: number, gy: number) => {
       // Sombra en la base
@@ -2261,6 +2301,18 @@ function drawGbcWalkableSurfaceTile(
     // Penacho 2 en el cuadrante inferior
     if ((h & 3) !== 0) {
       drawGrassTuft(wx + 18 + ((h >> 4) % 8), wy + 18 + ((h >> 6) % 7));
+    }
+    if ((h & 7) === 3) {
+      const sprigX = wx + 10 + ((h >> 9) % 12);
+      const sprigY = wy + 10 + ((h >> 14) % 12);
+      ctx.fillStyle = tuftShadow;
+      ctx.fillRect(sprigX, sprigY + 3, 6, 1);
+      ctx.fillStyle = tuftTip;
+      ctx.fillRect(sprigX + 1, sprigY + 1, 1, 2);
+      ctx.fillRect(sprigX + 3, sprigY, 1, 3);
+      ctx.fillRect(sprigX + 5, sprigY + 1, 1, 2);
+      ctx.fillStyle = isForest ? '#a7f3d0' : '#d9f99d';
+      ctx.fillRect(sprigX + 3, sprigY, 1, 1);
     }
 
     // 4. Flores silvestres de 4 pétalos (margaritas, dientes de león, amapolas)
@@ -2488,19 +2540,31 @@ function drawHandcraftedPathsAndStairs(
         ctx.fillRect(x + 6, y + 2, width - 12, segmentHeight - 4);
       }
 
+      // Borde tallado y sombra de pisada para separar el camino del césped con píxeles nítidos.
+      ctx.fillStyle = '#6f4928';
+      if (horizontal) {
+        ctx.fillRect(x + 2, y + segmentHeight - 3, segmentWidth - 4, 2);
+        ctx.fillStyle = '#e8c982';
+        ctx.fillRect(x + 2, y + 2, segmentWidth - 4, 1);
+      } else {
+        ctx.fillRect(x + segmentWidth - 3, y + 2, 2, segmentHeight - 4);
+        ctx.fillStyle = '#e8c982';
+        ctx.fillRect(x + 2, y + 2, 1, segmentHeight - 4);
+      }
+
       // 4. Flequillos de hierba orgánicos en los bordes para eliminar la línea recta artificial
       const grassGreen = '#42a344';
       ctx.fillStyle = grassGreen;
       if (horizontal) {
         for (let fx = x; fx < x + segmentWidth - 6; fx += 8) {
-          const tooth = (Math.abs(Math.sin(fx * 0.17)) * 4);
+          const tooth = Math.round(Math.abs(Math.sin(fx * 0.17)) * 4);
           // Dientes de hierba arriba y abajo
           ctx.fillRect(fx, y - 1, 3, tooth);
           ctx.fillRect(fx + 4, y + segmentHeight - tooth, 3, tooth + 1);
         }
       } else {
         for (let fy = y; fy < y + segmentHeight - 6; fy += 8) {
-          const tooth = (Math.abs(Math.sin(fy * 0.17)) * 4);
+          const tooth = Math.round(Math.abs(Math.sin(fy * 0.17)) * 4);
           // Dientes de hierba izquierda y derecha
           ctx.fillRect(x - 1, fy, tooth, 3);
           ctx.fillRect(x + segmentWidth - tooth, fy + 4, tooth + 1, 3);
@@ -4922,7 +4986,8 @@ export function renderIsland70sFrame(params: IslandRenderFrameParams): void {
     (flight.type !== 'shuttle-landing' || flight.elapsed / flight.duration >= 0.72)
   ) {
     ySortedDrawables.push({
-      sortY: player.y,
+      // Ordenar por el contacto de las botas con el suelo conserva la oclusión de copas y troncos.
+      sortY: player.y + 4,
       draw: () =>
         drawPixelAvatar4Dir(
           ctx,

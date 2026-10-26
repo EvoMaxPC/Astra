@@ -411,6 +411,7 @@ export function Origin70sIsland({
   const [activeDialog, setActiveDialog] = useState<ActiveDialogModal | null>(null);
   const [codexOpen, setCodexOpen] = useState<boolean>(false);
   const [inventoryOpen, setInventoryOpen] = useState<boolean>(false);
+  const [inventoryClosing, setInventoryClosing] = useState<boolean>(false);
   const [questsOpen, setQuestsOpen] = useState<boolean>(false);
   const [vectorModalOpen, setVectorModalOpen] = useState<boolean>(false);
   const [vectorAngles, setVectorAngles] = useState<[number, number, number]>([0, 45, 90]);
@@ -422,11 +423,21 @@ export function Origin70sIsland({
     y: initSetupRef.current.y,
   });
 
+  const closeInventory = () => {
+    if (latestStateRef.current.inventoryClosing) return;
+    setInventoryClosing(true);
+    window.setTimeout(() => {
+      setInventoryOpen(false);
+      setInventoryClosing(false);
+    }, 140);
+  };
+
   const anyModalOpen =
     Boolean(externalModalOpen) ||
     Boolean(activeDialog) ||
     codexOpen ||
     inventoryOpen ||
+    inventoryClosing ||
     questsOpen ||
     vectorModalOpen ||
     chronoWarpActive;
@@ -445,6 +456,8 @@ export function Origin70sIsland({
     southShortcutActive,
     progressState,
     modalOpen: anyModalOpen,
+    inventoryOpen,
+    inventoryClosing,
     chronoWarpActive,
   });
   latestStateRef.current = {
@@ -461,6 +474,8 @@ export function Origin70sIsland({
     southShortcutActive,
     progressState,
     modalOpen: anyModalOpen,
+    inventoryOpen,
+    inventoryClosing,
     chronoWarpActive,
   };
 
@@ -2065,7 +2080,8 @@ export function Origin70sIsland({
     let vw = window.innerWidth;
     let vh = window.innerHeight;
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const cameraZoom = 1.25;
+    // Zoom único del mundo exterior; el minimapa vive en la interfaz fija.
+    const cameraZoom = 1.75;
     const worldViewWidth = () => vw / cameraZoom;
     const worldViewHeight = () => vh / cameraZoom;
     const resize = () => {
@@ -2106,15 +2122,54 @@ export function Origin70sIsland({
     const keys: Record<string, boolean> = {};
     const isEditable = (el: EventTarget | null) =>
       el instanceof HTMLElement &&
-      (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      (el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable ||
+        Boolean(el.closest('[contenteditable="true"]')));
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isEditable(e.target)) return;
       const code = e.code;
-      keys[code] = true;
-
       const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
       const lowerKey = e.key.toLowerCase();
+
+      if (!hasModifier && code === 'KeyM' && activeAreaRef.current === 'exterior-70s') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (e.repeat || latestStateRef.current.modalOpen) return;
+        setMinimapOpen((prev) => !prev);
+        retroAudio.uiClick();
+        return;
+      }
+
+      if (
+        !hasModifier &&
+        code === 'Enter' &&
+        !latestStateRef.current.chronoWarpActive &&
+        (latestStateRef.current.inventoryOpen || !latestStateRef.current.modalOpen)
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (e.repeat) return;
+        if (latestStateRef.current.inventoryOpen) {
+          closeInventory();
+        } else if (!latestStateRef.current.modalOpen) {
+          for (const key of Object.keys(keys)) keys[key] = false;
+          const virtualInput = virtualInputRef.current;
+          virtualInput.up = false;
+          virtualInput.down = false;
+          virtualInput.left = false;
+          virtualInput.right = false;
+          virtualInput.sprint = false;
+          virtualInput.clickTarget = null;
+          setInventoryOpen(true);
+        }
+        retroAudio.uiClick();
+        return;
+      }
+
+      keys[code] = true;
 
       if (code === 'Escape') {
         if (latestStateRef.current.modalOpen && !latestStateRef.current.chronoWarpActive) {
@@ -2122,7 +2177,7 @@ export function Origin70sIsland({
           if (e.repeat) return;
           setActiveDialog(null);
           setCodexOpen(false);
-          setInventoryOpen(false);
+          closeInventory();
           setQuestsOpen(false);
           setVectorModalOpen(false);
           return;
@@ -2197,6 +2252,7 @@ export function Origin70sIsland({
             !latestStateRef.current.chronoWarpActive
           ) {
             e.preventDefault();
+            if (code === 'Enter') e.stopImmediatePropagation();
             setActiveDialog(null);
             setCodexOpen(false);
             setInventoryOpen(false);
@@ -3727,7 +3783,7 @@ export function Origin70sIsland({
                   }}
                   className="text-white hover:text-[#fde047] cursor-pointer font-bold"
                 >
-                  [Tab / X]
+                [M / TAB / X]
                 </button>
               </div>
               {renderMinimapMap()}
@@ -3965,7 +4021,7 @@ export function Origin70sIsland({
       )}
 
       {/* Inventario Flotante y Estadísticas [I] */}
-      {inventoryOpen && (
+      {(inventoryOpen || inventoryClosing) && (
         <RpgInventoryModal
           progressState={progressState}
           allUnlocked={allUnlocked}
@@ -4014,7 +4070,8 @@ export function Origin70sIsland({
             onToggleAudio,
             onOpenLevelSelector,
           }}
-          onClose={() => setInventoryOpen(false)}
+          closing={inventoryClosing}
+          onClose={closeInventory}
           onUseScanner={handleUseScannerPulse}
           onToggleLantern={handleToggleLanternAction}
           onUseWelder={handleUseWelderAction}

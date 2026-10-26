@@ -739,4 +739,37 @@ button:focus-visible {
   animation: rgbCeremonyGlow 3s infinite alternate ease-in-out;
 }
 
+@keyframes inventory-pixel-in {
+  0% { opacity: 0; transform: translateY(12px) scale(0.97); }
+  65% { opacity: 1; transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes inventory-pixel-out {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(7px) scale(0.985); }
+}
+
+@keyframes inventory-slot-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(0, 243, 255, 0.38), 2px 2px 0 #040711; }
+  50% { box-shadow: inset 0 0 0 1px rgba(0, 243, 255, 0.85), 0 0 8px rgba(0, 243, 255, 0.2), 2px 2px 0 #040711; }
+}
+
+.inventory-backdrop { animation: inventory-pixel-in 150ms steps(5, end) both; }
+.inventory-panel { image-rendering: pixelated; animation: inventory-pixel-in 150ms steps(5, end) both; }
+.inventory-panel-out { animation: inventory-pixel-out 140ms steps(5, end) both; }
+.inventory-backdrop-out { animation: inventory-pixel-out 140ms steps(5, end) both; }
+.inventory-slot-active { animation: inventory-slot-pulse 1.8s steps(2, end) infinite; }
+.pixel-item-sprite { image-rendering: pixelated; }
+.inventory-slots::-webkit-scrollbar { width: 6px; }
+.inventory-slots::-webkit-scrollbar-thumb { background: #3c6477; border: 1px solid #07111e; }
+.inventory-panel details > summary { list-style: none; }
+.inventory-panel details > summary::-webkit-details-marker { display: none; }
+.inventory-panel details > summary::before { content: '▸ '; color: #fde047; }
+.inventory-panel details[open] > summary::before { content: '▾ '; }
+
+@media (prefers-reduced-motion: reduce) {
+  .inventory-backdrop, .inventory-panel-out, .inventory-backdrop-out, .inventory-slot-active { animation-duration: 1ms; animation-iteration-count: 1; }
+}
+
 
